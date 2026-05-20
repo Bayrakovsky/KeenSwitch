@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-and-test:
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s "/Applications/Xcode_26.3.app/Contents/Developer"
+
+      - name: Build
+        run: |
+          xcodebuild \
+            -project KeenSwitch.xcodeproj \
+            -scheme KeenSwitch \
+            -configuration Debug \
+            -sdk macosx \
+            -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Unit tests
+        run: |
+          xcodebuild \
+            -project KeenSwitch.xcodeproj \
+            -scheme KeenSwitch \
+            -configuration Debug \
+            -sdk macosx \
+            -destination 'platform=macOS' \
+            -only-testing:KeenSwitchTests \
+            CODE_SIGNING_ALLOWED=NO \
+            test

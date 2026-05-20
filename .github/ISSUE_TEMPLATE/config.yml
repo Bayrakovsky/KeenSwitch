@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or help
+    url: https://github.com/Bayrakovsky/KeenSwitch/discussions
+    about: Not sure if it's a bug? Want to ask how something works? Open a Discussion.
+  - name: Keenetic router documentation
+    url: https://help.keenetic.com/
+    about: For questions about your router itself (not KeenSwitch).

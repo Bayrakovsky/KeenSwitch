@@ -1,0 +1,37 @@
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Артефакты локальной сборки
+*.app.zip
+dist/
+release/
+
+# Секреты (не коммитить)
+*.p12
+*.mobileprovision
+.env
+.env.*
+
+# .claude
+.claude/
