@@ -7,7 +7,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-First public release. Rename this section to `[1.0.0] — YYYY-MM-DD` when tagging.
+_Changes that will land in the next release will be listed here._
+
+## [1.0.0] — 2026-05-20
+
+First public release.
 
 ### Features
 
@@ -51,4 +55,5 @@ First public release. Rename this section to `[1.0.0] — YYYY-MM-DD` when taggi
 
 ---
 
-[Unreleased]: https://github.com/Bayrakovsky/KeenSwitch/commits/main
+[Unreleased]: https://github.com/Bayrakovsky/KeenSwitch/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/Bayrakovsky/KeenSwitch/releases/tag/v1.0.0
