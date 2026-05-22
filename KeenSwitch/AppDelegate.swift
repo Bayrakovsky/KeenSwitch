@@ -23,6 +23,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppTermination.resetQuitRequest()
 
+        // Системный logout / restart / shutdown — разрешаем честное завершение,
+        // иначе applicationShouldTerminate отменил бы выход из системы.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.willPowerOffNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            AppTermination.markSystemPowerOff()
+        }
+
 #if os(macOS)
         StatusBarQuitMenuAttacher.install()
 #endif
@@ -56,7 +66,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if AppTermination.userRequestedQuit {
+        // Явный выход пользователя ИЛИ системный logout/restart/shutdown → завершаемся.
+        // Иначе (закрытие окна / Dock «Завершить») просто прячемся в menu bar.
+        if AppTermination.allowsTermination {
             return .terminateNow
         }
         if Thread.isMainThread {
