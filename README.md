@@ -69,9 +69,23 @@ xattr -cr /Applications/KeenSwitch.app && open -a KeenSwitch
 *(Keenetic web interface → System Components → Network Policy → Install)*
 
 **In KeenSwitch:** open **Settings → Connection** and enter:
-- Router address — the same URL you use in the browser (e.g. `192.168.1.1`)
+- Router address — the same URL you use in the browser (e.g. `192.168.1.1`,
+  `http://192.168.1.1:8080`, or your KeenDNS name). Pasting a full browser URL is
+  fine — the scheme, port, and trailing slash are parsed automatically.
 - Admin username and password
 - Enable HTTPS if your router requires it
+
+### A note on HTTPS
+
+KeenSwitch validates TLS certificates like a browser does. This matters for **how you reach the router**:
+
+- **KeenDNS name** (e.g. `yourname.keenetic.link`) — has a valid certificate, so HTTPS just works.
+- **Local IP** (e.g. `192.168.1.1`) — Keenetic routers usually serve HTTPS there with a
+  **self-signed** certificate, which is rejected (you'll see a *TLS error*). On your home
+  network use **HTTP** for the local IP, or switch to the KeenDNS name for HTTPS.
+
+KeenSwitch does **not** accept untrusted certificates — this is deliberate, so a
+man-in-the-middle on your network can't intercept the router password.
 
 ## Build from source
 
