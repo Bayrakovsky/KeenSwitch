@@ -202,7 +202,7 @@ struct MenuBarContentView: View {
     private var footer: some View {
         HStack {
             Button(L10n.tr("Refresh")) {
-                Task { await viewModel.refreshAll() }
+                Task { await viewModel.refreshFromUI() }
             }
             .disabled(!viewModel.isConfigured || viewModel.isBusy)
 

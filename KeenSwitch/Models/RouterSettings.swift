@@ -58,4 +58,59 @@ struct RouterSettings: Codable, Sendable, Equatable {
     mutating func migrateLegacyPortIfNeeded() {
         if port == 23 { port = Self.httpPort }
     }
+
+    /// Приводит поле «адрес роутера» к чистому host'у. Пользователи часто вставляют адрес
+    /// прямо из браузера: «http://192.168.1.1», «192.168.1.1/», «192.168.1.1:8080», «[::1]».
+    /// Без нормализации такой ввод ломает URLComponents → invalidURL.
+    ///
+    /// Что делает:
+    ///   • снимает схему http:// / https:// (и выставляет useHTTPS по ней);
+    ///   • отбрасывает путь, query и хвостовой «/»;
+    ///   • вытаскивает встроенный «:порт» в поле port;
+    ///   • нормализует порт: ≤0 → порт по умолчанию для текущей схемы.
+    mutating func normalize() {
+        var raw = host.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 1. Схема.
+        if let schemeRange = raw.range(of: "://") {
+            let scheme = raw[raw.startIndex..<schemeRange.lowerBound].lowercased()
+            if scheme == "https" {
+                useHTTPS = true
+            } else if scheme == "http" {
+                useHTTPS = false
+            }
+            raw = String(raw[schemeRange.upperBound...])
+        }
+
+        // 2. Путь / query / fragment — всё после первого «/», «?» или «#».
+        if let cut = raw.firstIndex(where: { $0 == "/" || $0 == "?" || $0 == "#" }) {
+            raw = String(raw[raw.startIndex..<cut])
+        }
+
+        // 3. Встроенный порт. Аккуратно с IPv6 в скобках: «[::1]:8080».
+        if raw.hasPrefix("["), let close = raw.firstIndex(of: "]") {
+            let hostPart = String(raw[raw.startIndex...close])
+            let afterClose = raw.index(after: close)
+            if afterClose < raw.endIndex, raw[afterClose] == ":" {
+                let portString = String(raw[raw.index(after: afterClose)...])
+                if let parsed = Int(portString), parsed > 0 { port = parsed }
+            }
+            raw = hostPart
+        } else if let colon = raw.lastIndex(of: ":"),
+                  // ровно одно двоеточие → это host:port, а не «голый» IPv6
+                  raw.filter({ $0 == ":" }).count == 1 {
+            let portString = String(raw[raw.index(after: colon)...])
+            if let parsed = Int(portString), parsed > 0 {
+                port = parsed
+                raw = String(raw[raw.startIndex..<colon])
+            }
+        }
+
+        host = raw
+
+        // 4. Нормализация порта: ≤0 → порт по умолчанию для текущей схемы.
+        if port <= 0 {
+            port = useHTTPS ? Self.httpsPort : Self.httpPort
+        }
+    }
 }

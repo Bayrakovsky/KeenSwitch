@@ -28,6 +28,9 @@ final class AppViewModel {
     private let logger = Logger(subsystem: "com.bayrakovskiy.KeenSwitch", category: "ViewModel")
     private var saveDebounceTask: Task<Void, Never>?
     private var becomeActiveObserver: NSObjectProtocol?
+    /// Подписка на восстановление сети. Живёт в AppViewModel (он существует всё время работы),
+    /// поэтому автообновление срабатывает и в режиме только-меню-бар, где ContentView нет.
+    private var networkRestoreObserver: NSObjectProtocol?
 
     // MARK: - Настройки подключения
 
@@ -67,6 +70,15 @@ final class AppViewModel {
         ) { [weak self] _ in
             guard let self else { return }
             Task { await self.handleAppDidBecomeActive() }
+        }
+
+        networkRestoreObserver = NotificationCenter.default.addObserver(
+            forName: .networkDidRestore,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            Task { await self.refreshFromUI() }
         }
 
         Task { @MainActor in
@@ -116,7 +128,14 @@ final class AppViewModel {
     func selectDevice(_ mac: String?) { connection.selectDevice(mac) }
     func activePolicy(for device: NetworkDevice?) -> AccessPolicy? { connection.activePolicy(for: device) }
 
-    func refreshIfNeeded() async { await connection.refreshIfNeeded() }
+    func refreshIfNeeded() async {
+        // При тихом старте credentials могли ещё не подгрузиться (Keychain заблокирован).
+        // Перед запросом убеждаемся, что они есть — иначе connection молча выйдет по guard.
+        if !connection.hasCredentials {
+            await reloadStoredCredentialsIfNeeded()
+        }
+        await connection.refreshIfNeeded()
+    }
     func refreshAll() async { await connection.refreshAll() }
     func applyPolicy(_ policy: AccessPolicy, for mac: String? = nil) async {
         await connection.applyPolicy(policy, for: mac)
@@ -162,6 +181,16 @@ final class AppViewModel {
         }
     }
 
+    /// Refresh, вызываемый из UI (кнопки в окне и menu bar). В отличие от «голого»
+    /// refreshAll, сначала пытается дочитать credentials: при тихом старте Keychain
+    /// мог быть заблокирован, и без этого refreshAll молча выходит по guard hasCredentials.
+    func refreshFromUI() async {
+        if !connection.hasCredentials {
+            await reloadStoredCredentialsIfNeeded()
+        }
+        await connection.refreshAll()
+    }
+
     /// Отложенное сохранение при наборе текста в форме подключения.
     func scheduleSaveConnectionSettings() {
         saveDebounceTask?.cancel()
@@ -180,13 +209,21 @@ final class AppViewModel {
               !legacyAccount.isEmpty,
               legacyAccount != AppSettings.keychainAccount else { return }
 
-        let migrated = try? KeychainStore.loadPassword(account: legacyAccount)
-        if let pw = migrated, !pw.isEmpty {
-            try? KeychainStore.savePassword(pw, account: AppSettings.keychainAccount)
-            try? KeychainStore.deletePassword(account: legacyAccount)
-            password = pw
+        // ВАЖНО: маркер миграции стираем только если чтение Keychain РЕАЛЬНО состоялось
+        // (мигрировали пароль или старой записи нет). При временной ошибке — например,
+        // Keychain ещё заблокирован на тихом старте — loadPassword бросает; тогда маркер
+        // оставляем, чтобы повторить миграцию на следующем запуске и не потерять пароль.
+        do {
+            let migrated = try KeychainStore.loadPassword(account: legacyAccount)
+            if let pw = migrated, !pw.isEmpty {
+                try? KeychainStore.savePassword(pw, account: AppSettings.keychainAccount)
+                try? KeychainStore.deletePassword(account: legacyAccount)
+                password = pw
+            }
+            defaults.removeObject(forKey: AppSettings.legacyKeychainAccountKey)
+        } catch {
+            logger.error("Keychain migration deferred: \(error.localizedDescription)")
         }
-        defaults.removeObject(forKey: AppSettings.legacyKeychainAccountKey)
     }
 
     /// Применяет сохранённые credentials к RouterConnectionManager (единственный вызов configure).
@@ -197,6 +234,7 @@ final class AppViewModel {
 
     /// Сохраняет настройки подключения и обновляет credentials в RouterConnectionManager.
     func saveConnectionSettings() async {
+        settings.normalize()
         settings.migrateLegacyPortIfNeeded()
         AppSettings.router = settings
 

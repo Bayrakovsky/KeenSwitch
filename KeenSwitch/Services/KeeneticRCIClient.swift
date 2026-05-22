@@ -60,8 +60,15 @@ final class KeeneticRCIClient: @unchecked Sendable {
 
         var collected: [[AccessPolicy]] = []
         collected.append(contentsOf: await loadPoliciesFromGETPaths())
-        collected.append(contentsOf: await loadPoliciesByProbingSlots())
         var policies = RCIJSONParser.mergePolicies(collected)
+
+        // Перебор слотов Policy0…Policy15 — это 16 последовательных запросов. Нужен
+        // только если общий show вернул < 2 политик (на части прошивок там видна лишь
+        // активная PolicyN). Если основные GET-пути уже дали полную таблицу — пропускаем.
+        if policies.count < 2 {
+            collected.append(contentsOf: await loadPoliciesByProbingSlots())
+            policies = RCIJSONParser.mergePolicies(collected)
+        }
 
         // POST show — не на всех прошивках; не роняем обновление при 405.
         if policies.count < 2 {
@@ -321,7 +328,10 @@ final class KeeneticRCIClient: @unchecked Sendable {
             challenge: challenge
         )
 
-        let (postStatus, _) = try await request(
+        // rawRequest (а не request): request бросает httpError на не-2xx раньше, чем
+        // мы успеем распознать 401/403 как «неверные учётные данные». Здесь же сами
+        // маппим любой не-2xx ответ на authenticationFailed → понятное сообщение в UI.
+        let (postStatus, _, _) = try await rawRequest(
             path: "auth",
             method: "POST",
             json: ["login": settings.username, "password": hashed]

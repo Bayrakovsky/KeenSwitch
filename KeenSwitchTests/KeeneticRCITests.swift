@@ -378,4 +378,97 @@ struct KeeneticRCITests {
         settings.port = RouterSettings.httpsPort
         #expect(!settings.hasCustomPort)
     }
+
+    // MARK: - RouterSettings.normalize (адрес из браузера)
+
+    @Test func normalizeStripsHTTPScheme() {
+        var s = RouterSettings.default
+        s.host = "http://192.168.1.1"
+        s.useHTTPS = true
+        s.normalize()
+        #expect(s.host == "192.168.1.1")
+        #expect(s.useHTTPS == false) // схема http:// перекрывает флаг
+    }
+
+    @Test func normalizeStripsHTTPSSchemeAndSetsFlag() {
+        var s = RouterSettings.default
+        s.host = "https://my.keenetic.net"
+        s.useHTTPS = false
+        s.normalize()
+        #expect(s.host == "my.keenetic.net")
+        #expect(s.useHTTPS == true)
+    }
+
+    @Test func normalizeStripsTrailingSlashAndPath() {
+        var s = RouterSettings.default
+        s.host = "192.168.1.1/admin/index.html"
+        s.normalize()
+        #expect(s.host == "192.168.1.1")
+    }
+
+    @Test func normalizeExtractsInlinePort() {
+        var s = RouterSettings.default
+        s.host = "192.168.1.1:8080"
+        s.normalize()
+        #expect(s.host == "192.168.1.1")
+        #expect(s.port == 8080)
+    }
+
+    @Test func normalizeExtractsPortFromFullURL() {
+        var s = RouterSettings.default
+        s.host = "https://192.168.1.1:8443/"
+        s.normalize()
+        #expect(s.host == "192.168.1.1")
+        #expect(s.port == 8443)
+        #expect(s.useHTTPS == true)
+    }
+
+    @Test func normalizeZeroPortFallsBackToDefault() {
+        var s = RouterSettings.default
+        s.host = "192.168.1.1"
+        s.port = 0
+        s.useHTTPS = false
+        s.normalize()
+        #expect(s.port == RouterSettings.httpPort)
+
+        var https = RouterSettings.default
+        https.host = "192.168.1.1"
+        https.port = 0
+        https.useHTTPS = true
+        https.normalize()
+        #expect(https.port == RouterSettings.httpsPort)
+    }
+
+    @Test func normalizeTrimsWhitespace() {
+        var s = RouterSettings.default
+        s.host = "  192.168.1.1  "
+        s.normalize()
+        #expect(s.host == "192.168.1.1")
+    }
+
+    @Test func normalizeKeepsPlainHostUnchanged() {
+        var s = RouterSettings.default
+        s.host = "192.168.1.1"
+        s.port = 80
+        s.normalize()
+        #expect(s.host == "192.168.1.1")
+        #expect(s.port == 80)
+    }
+
+    @Test func normalizeHandlesIPv6WithPort() {
+        var s = RouterSettings.default
+        s.host = "[fe80::1]:8080"
+        s.normalize()
+        #expect(s.host == "[fe80::1]")
+        #expect(s.port == 8080)
+    }
+
+    @Test func normalizeKeepsBareIPv6() {
+        var s = RouterSettings.default
+        s.host = "[fe80::1]"
+        s.port = 80
+        s.normalize()
+        #expect(s.host == "[fe80::1]")
+        #expect(s.port == 80)
+    }
 }

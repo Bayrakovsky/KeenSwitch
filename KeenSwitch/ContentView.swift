@@ -41,11 +41,9 @@ struct ContentView: View {
         .onAppear {
             Task { await viewModel.refreshIfNeeded() }
         }
-        // Fix 7 — автообновление при восстановлении сетевого соединения.
-        .onChange(of: viewModel.networkMonitor.isConnected) { wasConnected, isNowConnected in
-            guard !wasConnected && isNowConnected else { return }
-            Task { await viewModel.refreshIfNeeded() }
-        }
+        // Автообновление при восстановлении сети обрабатывается в AppViewModel
+        // (подписка на .networkDidRestore) — работает во всех режимах, включая
+        // только-меню-бар, где этого ContentView нет.
     }
 }
 

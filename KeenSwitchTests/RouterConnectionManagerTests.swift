@@ -113,6 +113,57 @@ struct RouterConnectionManagerTests {
         #expect(manager.connectionState == .connected)
     }
 
+    // MARK: - Активная политика
+
+    @Test("activePolicy — устройство без политики наследует встроенный segment")
+    func activePolicyFallsBackToSegment() async {
+        let mac = "AA:BB:CC:DD:EE:FF"
+        let service = MockRouterService()
+        service.devicesToReturn = [
+            NetworkDevice(mac: mac, name: "Mac", ip: nil,
+                          interfaceName: nil, isOnline: true, currentPolicy: nil),
+        ]
+        // В реальном потоке segment добавляет assignablePolicies; здесь — вручную.
+        service.policiesToReturn = [
+            AccessPolicy(name: "segment", description: nil, routingInterface: nil),
+            AccessPolicy(name: "Policy0", description: "VPN", routingInterface: nil),
+        ]
+
+        let manager = RouterConnectionManager(service: service)
+        await manager.updateCredentials(settings: .default, password: "test")
+        await manager.refreshAll()
+
+        let device = manager.devices.first { $0.mac == mac }
+        #expect(manager.activePolicy(for: device)?.name == "segment")
+    }
+
+    @Test("activePolicy — устройство с PolicyN возвращает именно её, не segment")
+    func activePolicyReturnsAssignedPolicy() async {
+        let mac = "AA:BB:CC:DD:EE:FF"
+        let service = MockRouterService()
+        service.devicesToReturn = [
+            NetworkDevice(mac: mac, name: "Mac", ip: nil,
+                          interfaceName: nil, isOnline: true, currentPolicy: "Policy0"),
+        ]
+        service.policiesToReturn = [
+            AccessPolicy(name: "segment", description: nil, routingInterface: nil),
+            AccessPolicy(name: "Policy0", description: "VPN", routingInterface: nil),
+        ]
+
+        let manager = RouterConnectionManager(service: service)
+        await manager.updateCredentials(settings: .default, password: "test")
+        await manager.refreshAll()
+
+        let device = manager.devices.first { $0.mac == mac }
+        #expect(manager.activePolicy(for: device)?.name == "Policy0")
+    }
+
+    @Test("activePolicy — nil device → nil")
+    func activePolicyNilDevice() {
+        let manager = RouterConnectionManager(service: MockRouterService())
+        #expect(manager.activePolicy(for: nil) == nil)
+    }
+
     // MARK: - Закрепление устройств
 
     @Test("togglePin — добавляет и снимает закрепление устройства")

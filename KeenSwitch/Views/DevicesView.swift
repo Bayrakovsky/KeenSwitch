@@ -16,7 +16,7 @@ struct DevicesView: View {
                     Text(L10n.tr("Refresh Hint"))
                 } actions: {
                     Button(L10n.tr("Refresh")) {
-                        Task { await viewModel.refreshAll() }
+                        Task { await viewModel.refreshFromUI() }
                     }
                     .disabled(!viewModel.isConfigured)
                 }
@@ -55,7 +55,7 @@ struct DevicesView: View {
         .toolbar {
             ToolbarItemGroup {
                 Button {
-                    Task { await viewModel.refreshAll() }
+                    Task { await viewModel.refreshFromUI() }
                 } label: {
                     Label(L10n.tr("Refresh"), systemImage: "arrow.clockwise")
                 }
@@ -76,6 +76,7 @@ struct DevicesView: View {
             isPinned: viewModel.isPinned(mac: device.mac),
             policies: viewModel.policies,
             activePolicy: viewModel.activePolicy(for: device),
+            isBusy: viewModel.isBusy,
             onTogglePin: { viewModel.togglePin(mac: device.mac) }
         ) { policy in
             viewModel.selectDevice(device.mac)
@@ -90,6 +91,7 @@ private struct DeviceRow: View {
     let isPinned: Bool
     let policies: [AccessPolicy]
     let activePolicy: AccessPolicy?
+    let isBusy: Bool
     let onTogglePin: () -> Void
     let onSelectPolicy: (AccessPolicy) -> Void
 
@@ -168,7 +170,7 @@ private struct DeviceRow: View {
                     Image(systemName: "ellipsis.circle")
                 }
                 .menuStyle(.borderlessButton)
-                .disabled(policies.isEmpty)
+                .disabled(policies.isEmpty || isBusy)
                 .accessibilityLabel(L10n.tr("Select Policy"))
             }
         }

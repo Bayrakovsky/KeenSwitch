@@ -163,6 +163,9 @@ final class RouterConnectionManager {
             return
         }
         refreshTask?.cancel()
+        // Отменяем параллельное применение политики: оба метода правят `devices`,
+        // и одновременная замена массива в refresh могла бы перетереть точечную правку apply.
+        applyTask?.cancel()
         let task = Task { await doRefresh() }
         refreshTask = task
         await task.value
@@ -221,6 +224,9 @@ final class RouterConnectionManager {
             return
         }
         applyTask?.cancel()
+        // Отменяем параллельную загрузку: refresh заменяет весь массив `devices`,
+        // что могло бы перетереть точечную правку политики, сделанную здесь.
+        refreshTask?.cancel()
         let task = Task { await doApplyPolicy(policy, targetMAC: targetMAC) }
         applyTask = task
         await task.value
@@ -256,8 +262,14 @@ final class RouterConnectionManager {
     // MARK: - Политики устройств
 
     /// Политика роутера, назначенная устройству (если есть в загруженном списке политик).
+    /// Пустой/отсутствующий currentPolicy означает наследование политики сегмента —
+    /// возвращаем встроенный режим `segment`, иначе активным окажется «ничто»: в дефолтном
+    /// состоянии не было бы галочки, а применение «по умолчанию» давало бы ложный mismatch.
     func activePolicy(for device: NetworkDevice?) -> AccessPolicy? {
-        guard let device, let name = device.currentPolicy else { return nil }
+        guard let device else { return nil }
+        guard let name = device.currentPolicy, !name.isEmpty else {
+            return policies.first { $0.name == KeeneticPolicyCatalog.builtInSegment }
+        }
         return policies.first { $0.name == name }
     }
 
