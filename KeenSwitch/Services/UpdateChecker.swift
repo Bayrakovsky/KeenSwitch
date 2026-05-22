@@ -197,30 +197,60 @@ final class UpdateChecker {
         let pid = ProcessInfo.processInfo.processIdentifier
 
         // Установка через shell-скрипт: приложение не может заменить себя пока работает.
-        // Скрипт запускается отдельным процессом и:
-        //   1. Ждёт завершения текущего процесса (по PID, с таймаутом 10с).
-        //   2. Заменяет .app через ditto (сохраняет extended attributes и структуру бандла).
-        //   3. Перезапускает новую версию и убирает временные файлы.
-        let script = """
+        // Все пути передаются как аргументы ($1…$6), а НЕ интерполируются в текст скрипта —
+        // это исключает поломку/инъекцию, если в пути есть кавычки или апостроф.
+        //
+        // Замена атомарная, с бэкапом:
+        //   1. Ждём завершения текущего процесса (по PID, таймаут 10с).
+        //   2. Копируем новый бандл рядом (.new) — на том же томе, проверяем успех.
+        //   3. Старый → .bak, затем .new → на место. При сбое откатываем из .bak.
+        //   4. Только после успешной замены удаляем .bak/временное и перезапускаемся.
+        // Старое приложение НИКОГДА не удаляется до того, как новое встало на место —
+        // сбой апдейта не оставит пользователя без приложения.
+        let script = #"""
         #!/bin/bash
-        exec > '\(logPath)' 2>&1
-        set -e
+        CURRENT="$1"; NEW_APP="$2"; TMP_DIR="$3"; ZIP="$4"; LOG="$5"; PID="$6"
+        exec > "$LOG" 2>&1
 
         # Ожидаем завершения текущего процесса (максимум 10 секунд).
         DEADLINE=$(( $(date +%s) + 10 ))
-        while kill -0 \(pid) 2>/dev/null; do
-            [ $(date +%s) -ge $DEADLINE ] && break
+        while kill -0 "$PID" 2>/dev/null; do
+            [ "$(date +%s)" -ge "$DEADLINE" ] && break
             sleep 0.3
         done
 
-        rm -rf '\(currentAppPath)'
-        /usr/bin/ditto '\(newAppPath)' '\(currentAppPath)'
-        xattr -cr '\(currentAppPath)'
-        open '\(currentAppPath)'
-        rm -rf '\(tempDir.path)'
-        rm -f '\(zipURL.path)'
+        STAGED="${CURRENT}.new"
+        BACKUP="${CURRENT}.bak"
+        rm -rf "$STAGED" "$BACKUP"
+
+        # Копируем новый бандл рядом со старым (тот же том). Без удаления старого.
+        if ! /usr/bin/ditto "$NEW_APP" "$STAGED"; then
+            echo "ditto to staged copy failed"
+            rm -rf "$STAGED"
+            exit 1
+        fi
+
+        # Сдвигаем старое в бэкап. Если не вышло (нет прав) — старое цело, выходим.
+        if ! mv "$CURRENT" "$BACKUP"; then
+            echo "could not move current app aside (permissions?)"
+            rm -rf "$STAGED"
+            exit 1
+        fi
+
+        # Ставим новое на место. При сбое — откатываем старое из бэкапа.
+        if ! mv "$STAGED" "$CURRENT"; then
+            echo "swap failed, restoring backup"
+            mv "$BACKUP" "$CURRENT"
+            exit 1
+        fi
+
+        xattr -cr "$CURRENT" 2>/dev/null || true
+        rm -rf "$BACKUP"
+        rm -rf "$TMP_DIR"
+        rm -f "$ZIP"
+        open "$CURRENT"
         rm -f "$0"
-        """
+        """#
 
         let scriptURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("keenswitch-updater.sh")
@@ -234,7 +264,15 @@ final class UpdateChecker {
 
         let launcher = Process()
         launcher.executableURL = URL(fileURLWithPath: "/bin/bash")
-        launcher.arguments = [scriptURL.path]
+        launcher.arguments = [
+            scriptURL.path,   // $0
+            currentAppPath,   // $1
+            newAppPath,       // $2
+            tempDir.path,     // $3
+            zipURL.path,      // $4
+            logPath,          // $5
+            String(pid),      // $6
+        ]
         launcher.standardOutput = nil
         launcher.standardError = nil
         try launcher.run()
