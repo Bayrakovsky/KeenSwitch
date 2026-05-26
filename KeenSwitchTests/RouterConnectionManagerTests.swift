@@ -65,7 +65,9 @@ struct RouterConnectionManagerTests {
         }
         #expect(manager.devices.isEmpty)
         #expect(!manager.isBusy)
-        #expect(service.disconnectCallCount == 1)
+        // Транзиентная ошибка refresh не должна рвать сессию авторизации:
+        // следующая попытка обращается с уже валидными credentials.
+        #expect(service.disconnectCallCount == 0)
     }
 
     @Test("refreshAll — не запускается без credentials")

@@ -208,7 +208,6 @@ final class RouterConnectionManager {
             let message = error.userFacingMessage
             connectionState = .error(message)
             statusMessage = message
-            await service.disconnect()
         }
 
         isBusy = false

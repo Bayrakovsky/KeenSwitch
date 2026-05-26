@@ -8,6 +8,7 @@ struct MenuBarContentView: View {
     @Environment(AppViewModel.self) private var viewModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -22,6 +23,14 @@ struct MenuBarContentView: View {
         .frame(width: 340)
         .task {
             await viewModel.refreshIfNeeded()
+        }
+        .onAppear {
+            // При тихом запуске сцена Window не инстанцируется, поэтому OpenWindowRegistrar
+            // внутри ContentView не успевает зарегистрировать openWindow. MenuBarExtra доступен
+            // всегда — регистрируем действие отсюда, иначе show() не сможет создать окно.
+            MainWindowVisibility.registerOpenWindow {
+                openWindow(id: MainWindowVisibility.windowID)
+            }
         }
     }
 
@@ -210,7 +219,10 @@ struct MenuBarContentView: View {
 
             Button(L10n.tr("Open")) {
                 dismiss()
-                MainWindowVisibility.show()
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(150))
+                    MainWindowVisibility.show()
+                }
             }
 
             Button(L10n.tr("Settings")) {

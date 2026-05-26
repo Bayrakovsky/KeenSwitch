@@ -9,9 +9,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 _Changes that will land in the next release will be listed here._
 
-## [1.0.1] — 2026-05-21
+## [1.0.1] — 2026-05-26
 
 ### Fixed
+- **The menu bar "Open" button did nothing after a quiet (login) launch until the Dock
+  icon was clicked at least once.** The SwiftUI `Window` scene is not instantiated during
+  an `.accessory` startup, so the `openWindow` action — previously registered only from
+  inside the main window's view tree — was never wired up; clicking Open switched the
+  activation policy but had no handler to actually create a window. The action is now
+  registered from the menu bar popup (which is always alive), so Open creates the window
+  on first click regardless of launch mode.
 - **Adding any preference field would have silently reset all settings on upgrade.**
   `AppPreferences` used synthesized decoding, so JSON missing a key failed to decode and
   fell back to defaults, wiping language / launch-at-login / quiet-start. Decoding now

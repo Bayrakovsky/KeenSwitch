@@ -78,11 +78,25 @@ enum MainWindowVisibility {
     static func show() {
         logger.info("show() — запрос на показ главного окна")
         AppLaunchMode.allowMainWindow()
-        if NSApp.activationPolicy() != .regular {
+        let wasAccessory = NSApp.activationPolicy() != .regular
+        if wasAccessory {
             NSApp.setActivationPolicy(.regular)
         }
         orderOutAuxiliaryWindows()
 
+        if wasAccessory {
+            // macOS обрабатывает смену политики активации асинхронно: Dock-иконка
+            // появляется, но makeKeyAndOrderFront в том же такте не срабатывает.
+            // Откладываем показ окна, чтобы дать системе завершить переход.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                MainWindowVisibility.showWindowInternal()
+            }
+            return
+        }
+        showWindowInternal()
+    }
+
+    private static func showWindowInternal() {
         if mainWindowNeedsVibrancyRecreate {
             recreateMainWindowForVibrancy()
             return
@@ -94,6 +108,9 @@ enum MainWindowVisibility {
             return
         }
 
+        if openWindowHandler == nil {
+            logger.error("showWindowInternal — openWindowHandler == nil, окно создать нечем")
+        }
         openWindowHandler?()
         waitForMainWindow(attempt: 0)
     }
@@ -142,7 +159,10 @@ enum MainWindowVisibility {
             bringToFront(window)
             return
         }
-        guard attempt < 30 else { return }
+        guard attempt < 30 else {
+            logger.error("waitForMainWindow — окно так и не появилось за 30 попыток")
+            return
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             waitForMainWindow(attempt: attempt + 1)
         }
