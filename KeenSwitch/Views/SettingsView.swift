@@ -260,12 +260,23 @@ private struct RouterConnectionStatusCard: View {
         }
         .padding(12)
         .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
+            if #available(macOS 26, *) {
+                ConcentricRectangle(corners: .concentric(minimum: .fixed(10)))
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            } else {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            }
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(borderColor.opacity(0.35), lineWidth: 1)
+            if #available(macOS 26, *) {
+                // ConcentricRectangle не InsettableShape, поэтому stroke, а не strokeBorder.
+                ConcentricRectangle(corners: .concentric(minimum: .fixed(10)))
+                    .stroke(borderColor.opacity(0.35), lineWidth: 1)
+            } else {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(borderColor.opacity(0.35), lineWidth: 1)
+            }
         }
         .accessibilityElement(children: .combine)
     }
