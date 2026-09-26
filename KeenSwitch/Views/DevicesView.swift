@@ -95,6 +95,18 @@ private struct DeviceRow: View {
     let onTogglePin: () -> Void
     let onSelectPolicy: (AccessPolicy) -> Void
 
+    /// Имя активной политики для Picker. Пустая строка — активной нет, тогда ни один
+    /// тег не совпадёт и меню покажется без галочки.
+    private var selectedPolicyName: Binding<String> {
+        Binding(
+            get: { activePolicy?.name ?? "" },
+            set: { name in
+                guard let policy = policies.first(where: { $0.name == name }) else { return }
+                onSelectPolicy(policy)
+            }
+        )
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             DeviceIconView(isOnline: device.isOnline)
@@ -154,18 +166,19 @@ private struct DeviceRow: View {
                 .accessibilityLabel(isPinned ? L10n.tr("Unpin") : L10n.tr("Pin"))
 
                 Menu {
-                    ForEach(policies) { policy in
-                        Button {
-                            onSelectPolicy(policy)
-                        } label: {
-                            if activePolicy?.name == policy.name {
-                                Label(policy.localizedDisplayTitle, systemImage: "checkmark")
-                            } else {
-                                Text(policy.localizedDisplayTitle)
-                            }
+                    // Picker, а не ForEach(Button): в меню на macOS иконка из
+                    // Label(_, systemImage:) не отрисовывается, поэтому активный пункт
+                    // ничем не отличался от остальных. Inline-Picker выставляет пункту
+                    // NSMenuItem.state = .on — галочка в штатной колонке, плюс
+                    // навигация с клавиатуры и состояние «выбрано» для VoiceOver.
+                    Picker(L10n.tr("Select Policy"), selection: selectedPolicyName) {
+                        ForEach(policies) { policy in
+                            Text(policy.localizedDisplayTitle)
+                                .tag(policy.name)
                         }
-                        .accessibilityLabel(policy.localizedDisplayTitle)
                     }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }

@@ -14,6 +14,18 @@ _Changes that will land in the next release will be listed here._
 Built with Xcode 27 against the macOS 27 SDK. Minimum stays **macOS 14 Sonoma**,
 builds stay universal (Apple Silicon + Intel).
 
+### Fixed
+
+- **The policy menu in the main window never marked the policy a device is currently
+  on.** Opening the `…` menu in a device row showed the list with nothing selected, so
+  you had to read the row text to know where the device was routed. The menu now draws a
+  proper checkmark next to the active policy.
+  *Why it happened:* the active item was built as `Label(title, systemImage: "checkmark")`,
+  and macOS drops `Label` icons when SwiftUI bridges menu content to `NSMenuItem` — so the
+  active and inactive items rendered identically. It is now an inline `Picker`, which sets
+  the menu item's state and also brings keyboard navigation and a "selected" state for
+  VoiceOver.
+
 ### Changed
 
 - **Quitting the app works differently.** Right-clicking the menu bar icon no longer
