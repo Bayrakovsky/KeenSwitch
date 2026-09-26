@@ -135,7 +135,7 @@ nonisolated enum KeychainStore {
 nonisolated enum KeychainError: LocalizedError {
     case operationFailed(OSStatus)
 
-    nonisolated var errorDescription: String? {
+    var errorDescription: String? {
         switch self {
         case .operationFailed(let status):
             return String(format: L10n.tr("Keychain Error"), Int(status))

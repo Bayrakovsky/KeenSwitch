@@ -11,14 +11,14 @@ import os
 //
 // Несколько вариантов одной операции (fallback) — прошивки KeeneticOS отличаются.
 
-final class KeeneticRCIClient: @unchecked Sendable {
-    private nonisolated static let logger = Logger(subsystem: "com.bayrakovskiy.KeenSwitch", category: "RCI")
+nonisolated final class KeeneticRCIClient: @unchecked Sendable {
+    private static let logger = Logger(subsystem: "com.bayrakovskiy.KeenSwitch", category: "RCI")
 
     private let settings: RouterSettings
     private let password: String
     private let session: URLSession
 
-    nonisolated init(settings: RouterSettings, password: String) {
+    init(settings: RouterSettings, password: String) {
         self.settings = settings
         self.password = password
 
@@ -31,11 +31,11 @@ final class KeeneticRCIClient: @unchecked Sendable {
         self.session = URLSession(configuration: config)
     }
 
-    nonisolated func testConnection() async throws -> RouterInfo {
+    func testConnection() async throws -> RouterInfo {
         try await fetchRouterInfo()
     }
 
-    nonisolated func fetchRouterInfo() async throws -> RouterInfo {
+    func fetchRouterInfo() async throws -> RouterInfo {
         try await authenticate()
         let (_, versionData) = try await request(path: "rci/show/version", method: "GET")
         logPreview(label: "GET show/version", data: versionData)
@@ -53,7 +53,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
         return info
     }
 
-    nonisolated func fetchPolicies() async throws -> [AccessPolicy] {
+    func fetchPolicies() async throws -> [AccessPolicy] {
         try await authenticate()
 
         let (_, hotspotData) = try await request(path: "rci/show/ip/hotspot", method: "GET")
@@ -90,7 +90,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
         return policies
     }
 
-    nonisolated func fetchDevices() async throws -> [NetworkDevice] {
+    func fetchDevices() async throws -> [NetworkDevice] {
         try await authenticate()
         let (_, data) = try await request(path: "rci/show/ip/hotspot", method: "GET")
         var devices = try RCIJSONParser.devices(from: data)
@@ -104,7 +104,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
     }
 
     /// Политики назначены в конфигурации, а не в live `show ip hotspot`.
-    private nonisolated func loadHostPolicyMap() async -> [String: String] {
+    private func loadHostPolicyMap() async -> [String: String] {
         let paths = [
             "rci/show/rc/ip/hotspot",
             "rci/ip/hotspot/host",
@@ -125,12 +125,12 @@ final class KeeneticRCIClient: @unchecked Sendable {
         return [:]
     }
 
-    nonisolated func fetchHostPolicyMap() async throws -> [String: String] {
+    func fetchHostPolicyMap() async throws -> [String: String] {
         try await authenticate()
         return await loadHostPolicyMap()
     }
 
-    nonisolated func setPolicy(mac: String, policyName: String, saveConfiguration: Bool) async throws {
+    func setPolicy(mac: String, policyName: String, saveConfiguration: Bool) async throws {
         try await authenticate()
         let apiMAC = Self.apiMAC(mac)
 
@@ -148,7 +148,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
         }
     }
 
-    private nonisolated func setBuiltInPolicy(apiMAC: String, policyName: String) async throws {
+    private func setBuiltInPolicy(apiMAC: String, policyName: String) async throws {
         switch policyName {
         case KeeneticPolicyCatalog.builtInPermit:
             try await clearHostIPPolicy(apiMAC: apiMAC)
@@ -163,7 +163,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
         }
     }
 
-    private nonisolated func setHostAccess(apiMAC: String, access: String) async throws {
+    private func setHostAccess(apiMAC: String, access: String) async throws {
         let body: [String: Any] = [
             "mac": apiMAC,
             "access": access,
@@ -172,7 +172,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
         try RCIJSONParser.validateCommandResponse(data)
     }
 
-    private nonisolated func clearHostIPPolicy(apiMAC: String) async throws {
+    private func clearHostIPPolicy(apiMAC: String) async throws {
         let body: [String: Any] = [
             "mac": apiMAC,
             "no": true,
@@ -181,7 +181,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
         try RCIJSONParser.validateCommandResponse(data)
     }
 
-    private nonisolated func runFirstSuccessful(
+    private func runFirstSuccessful(
         _ operations: [() async throws -> Void],
         failureMessage: String
     ) async throws {
@@ -198,7 +198,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
         throw lastError
     }
 
-    private nonisolated func setIPPolicyViaHostEndpoint(apiMAC: String, policyName: String) async throws {
+    private func setIPPolicyViaHostEndpoint(apiMAC: String, policyName: String) async throws {
         let body: [String: Any] = [
             "mac": apiMAC,
             "permit": true,
@@ -208,7 +208,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
         try RCIJSONParser.validateCommandResponse(data)
     }
 
-    private nonisolated func setPolicyViaPolicyEndpoint(apiMAC: String, policyName: String) async throws {
+    private func setPolicyViaPolicyEndpoint(apiMAC: String, policyName: String) async throws {
         let body: [String: Any] = [
             "mac": apiMAC,
             "policy": policyName,
@@ -217,12 +217,12 @@ final class KeeneticRCIClient: @unchecked Sendable {
         try RCIJSONParser.validateCommandResponse(data)
     }
 
-    private nonisolated func persistRouterConfiguration() async throws {
+    private func persistRouterConfiguration() async throws {
         let (_, data) = try await request(path: "rci/system/configuration/save", method: "POST", json: [:] as [String: Any])
         try RCIJSONParser.validateCommandResponse(data)
     }
 
-    private nonisolated static func apiMAC(_ mac: String) -> String {
+    private static func apiMAC(_ mac: String) -> String {
         mac.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
@@ -230,12 +230,12 @@ final class KeeneticRCIClient: @unchecked Sendable {
 
     /// Live-состояние и сохранённая конфигурация (как в веб-интерфейсе «Применение политик»).
     /// Сначала сохранённая конфигурация (`show rc ip policy` в telnet).
-    private nonisolated static let policyGETPaths = [
+    private static let policyGETPaths = [
         "rci/show/rc/ip/policy",
         "rci/show/ip/policy",
     ]
 
-    private nonisolated func loadPoliciesFromGETPaths() async -> [[AccessPolicy]] {
+    private func loadPoliciesFromGETPaths() async -> [[AccessPolicy]] {
         var lists: [[AccessPolicy]] = []
         for path in Self.policyGETPaths {
             do {
@@ -253,7 +253,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
     }
 
     /// На части прошивок в общем `show ip policy` видна только активная PolicyN.
-    private nonisolated func loadPoliciesByProbingSlots() async -> [[AccessPolicy]] {
+    private func loadPoliciesByProbingSlots() async -> [[AccessPolicy]] {
         var lists: [[AccessPolicy]] = []
         for index in KeeneticPolicyCatalog.policySlotRange {
             let name = KeeneticPolicyCatalog.policySlotName(index)
@@ -272,7 +272,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
         return lists
     }
 
-    private nonisolated func loadPoliciesFromShowPOST() async -> [[AccessPolicy]] {
+    private func loadPoliciesFromShowPOST() async -> [[AccessPolicy]] {
         let batches: [[[String: Any]]] = [
             [["show": ["ip": ["policy": [:] as [String: Any]] as [String: Any]] as [String: Any]]],
             [["show": ["rc": ["ip": ["policy": [:] as [String: Any]] as [String: Any]] as [String: Any]] as [String: Any]]],
@@ -299,7 +299,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
         return lists
     }
 
-    private nonisolated func policiesFromBatchFirstElement(_ data: Data) throws -> [AccessPolicy] {
+    private func policiesFromBatchFirstElement(_ data: Data) throws -> [AccessPolicy] {
         guard let array = try? JSONSerialization.jsonObject(with: data) as? [Any],
               let first = array.first else { return [] }
         let wrapped = try JSONSerialization.data(withJSONObject: first)
@@ -308,7 +308,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
 
     // MARK: - Аутентификация
 
-    private nonisolated func authenticate() async throws {
+    private func authenticate() async throws {
         let (status, _, headers) = try await rawRequest(path: "auth", method: "GET")
         if status == 200 { return }
 
@@ -342,7 +342,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
         }
     }
 
-    nonisolated static func hashPassword(login: String, realm: String, password: String, challenge: String) -> String {
+    static func hashPassword(login: String, realm: String, password: String, challenge: String) -> String {
         let md5Input = "\(login):\(realm):\(password)"
         let md5 = Insecure.MD5.hash(data: Data(md5Input.utf8))
         let md5Hex = md5.map { String(format: "%02x", $0) }.joined()
@@ -353,7 +353,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
 
     // MARK: - HTTP-запросы
 
-    private nonisolated func request(
+    private func request(
         path: String,
         method: String,
         json: [String: Any]? = nil,
@@ -369,7 +369,7 @@ final class KeeneticRCIClient: @unchecked Sendable {
         return (status, data)
     }
 
-    private nonisolated func rawRequest(
+    private func rawRequest(
         path: String,
         method: String,
         json: [String: Any]? = nil,
@@ -408,12 +408,12 @@ final class KeeneticRCIClient: @unchecked Sendable {
         return (status, data, headers)
     }
 
-    private nonisolated static func describe(urlError: URLError, url: URL) -> String {
+    private static func describe(urlError: URLError, url: URL) -> String {
         // Общая таблица переводов URLError — см. URLErrorLocalization.
         URLErrorLocalization.message(for: urlError, url: url)
     }
 
-    private nonisolated func makeURL(path: String) -> URL? {
+    private func makeURL(path: String) -> URL? {
         var components = URLComponents()
         components.scheme = settings.useHTTPS ? "https" : "http"
         components.host = settings.host.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -428,11 +428,11 @@ final class KeeneticRCIClient: @unchecked Sendable {
         return components.url
     }
 
-    private nonisolated func header(_ name: String, in headers: [String: String]) -> String? {
+    private func header(_ name: String, in headers: [String: String]) -> String? {
         headers.first { $0.key.caseInsensitiveCompare(name) == .orderedSame }?.value
     }
 
-    private nonisolated func logPreview(label: String, data: Data) {
+    private func logPreview(label: String, data: Data) {
         let text = String(data: data, encoding: .utf8) ?? "<binary>"
         Self.logger.debug("[\(label)] \(text.prefix(800), privacy: .public)")
     }

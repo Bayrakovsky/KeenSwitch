@@ -10,7 +10,7 @@ nonisolated enum KeeneticError: LocalizedError {
     case apiError(String)
     case connectionFailed(String)
 
-    nonisolated var errorDescription: String? {
+    var errorDescription: String? {
         switch self {
         case .notConfigured:
             return L10n.tr("Configure Router First")

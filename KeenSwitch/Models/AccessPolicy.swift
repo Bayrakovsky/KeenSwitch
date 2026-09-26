@@ -10,7 +10,7 @@ nonisolated struct AccessPolicy: Identifiable, Hashable, Sendable {
     /// Основной интерфейс маршрута по умолчанию (OpenVPN0, Home, …).
     let routingInterface: String?
 
-    nonisolated var displayTitle: String {
+    var displayTitle: String {
         if let description, !description.isEmpty {
             return description
         }
@@ -18,11 +18,11 @@ nonisolated struct AccessPolicy: Identifiable, Hashable, Sendable {
     }
 
     /// Заголовок с учётом локализации встроенных режимов Keenetic.
-    nonisolated var localizedDisplayTitle: String {
+    var localizedDisplayTitle: String {
         KeeneticPolicyCatalog.localizedTitle(for: name) ?? displayTitle
     }
 
-    nonisolated var displaySubtitle: String {
+    var displaySubtitle: String {
         if let description, !description.isEmpty {
             return name
         }
@@ -40,7 +40,7 @@ nonisolated struct NetworkDevice: Identifiable, Hashable, Sendable {
     let isOnline: Bool
     var currentPolicy: String?
 
-    nonisolated var displayName: String {
+    var displayName: String {
         if let name, !name.isEmpty {
             return name
         }
@@ -55,7 +55,7 @@ nonisolated struct NetworkDevice: Identifiable, Hashable, Sendable {
 
 nonisolated extension NetworkDevice {
     /// Сначала закреплённые (в порядке закрепления), затем в сети, затем остальные; внутри группы — по имени.
-    nonisolated static func sortedForDisplay(_ devices: [NetworkDevice], pinnedMACs: [String] = []) -> [NetworkDevice] {
+    static func sortedForDisplay(_ devices: [NetworkDevice], pinnedMACs: [String] = []) -> [NetworkDevice] {
         guard !pinnedMACs.isEmpty else {
             return sortedByReachability(devices)
         }
@@ -68,7 +68,7 @@ nonisolated extension NetworkDevice {
         return result
     }
 
-    private nonisolated static func sortedByReachability(_ devices: [NetworkDevice]) -> [NetworkDevice] {
+    private static func sortedByReachability(_ devices: [NetworkDevice]) -> [NetworkDevice] {
         devices.sorted { lhs, rhs in
             if lhs.isOnline != rhs.isOnline {
                 return lhs.isOnline && !rhs.isOnline

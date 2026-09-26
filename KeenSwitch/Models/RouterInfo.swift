@@ -39,7 +39,7 @@ nonisolated struct RouterInfo: Equatable, Sendable {
         return nil
     }
 
-    nonisolated func withHostname(_ hostname: String?) -> RouterInfo {
+    func withHostname(_ hostname: String?) -> RouterInfo {
         RouterInfo(
             hostname: hostname,
             model: model,

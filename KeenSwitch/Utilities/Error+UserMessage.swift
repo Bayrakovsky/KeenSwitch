@@ -35,8 +35,8 @@ extension Error {
 
 /// Локализация URLError на язык приложения. Используется и в KeeneticRCIClient,
 /// и в Error.userFacingMessage — общая точка истины для сетевых ошибок.
-enum URLErrorLocalization {
-    nonisolated static func message(for urlError: URLError) -> String {
+nonisolated enum URLErrorLocalization {
+    static func message(for urlError: URLError) -> String {
         let url = urlError.failingURL
         let urlString = url?.absoluteString ?? ""
         let host = url?.host ?? L10n.tr("Keenetic Router")
@@ -73,7 +73,7 @@ enum URLErrorLocalization {
     }
 
     /// Перегрузка для случаев, где URL известен извне (KeeneticRCIClient).
-    nonisolated static func message(for urlError: URLError, url: URL) -> String {
+    static func message(for urlError: URLError, url: URL) -> String {
         let host = url.host ?? L10n.tr("Keenetic Router")
         switch urlError.code {
         case .timedOut:
