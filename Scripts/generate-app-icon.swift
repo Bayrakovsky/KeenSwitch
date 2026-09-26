@@ -1,4 +1,17 @@
 #!/usr/bin/env swift
+//
+// Генерирует ТОЛЬКО legacy PNG-стек для Assets.xcassets/AppIcon.appiconset —
+// плоские растровые размеры, как до macOS 26.
+//
+// Слоёная иконка Liquid Glass (AppIcon.icon) здесь не делается: формат
+// folder.iconcomposer.icon собирается в GUI Icon Composer, который лежит в
+// /Applications/Xcode.app/Contents/Applications/Icon Composer.app.
+// Как её подключить — см. «App icon» в CONTRIBUTING.md.
+//
+// Исходные параметры рисунка, чтобы иконка в Icon Composer совпала с этой:
+//   фон     — линейный градиент 135°, RGB 0.24/0.52/0.98 → 0.10/0.34/0.82
+//   символ   — SF Symbol «arrow.triangle.branch», semibold, 46% от стороны
+//   скругление — 22% от стороны, инсет 6%
 import AppKit
 
 struct IconSpec: Hashable {
