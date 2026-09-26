@@ -9,6 +9,51 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 _Changes that will land in the next release will be listed here._
 
+## [1.1.0] — 2026-09-26
+
+Built with Xcode 27 against the macOS 27 SDK. Minimum stays **macOS 14 Sonoma**,
+builds stay universal (Apple Silicon + Intel).
+
+### Changed
+
+- **Quitting the app works differently.** Right-clicking the menu bar icon no longer
+  opens a Quit menu. Use **Quit** in the menu bar popup, or **⌘Q** when the main window
+  is open. Closing the window and Dock → Quit still just hide KeenSwitch in the menu
+  bar, exactly as before.
+  *Why:* quitting used to depend entirely on an unsupported trick — the app hunted
+  through its own windows for the status bar item and hijacked that button's
+  target/action. macOS 27 rewrote the menu bar to render as a single window, which
+  makes hunting for status item windows unreliable, and the macOS 27 SDK explicitly
+  says not to drive a status item through target/action any more. That trick was the
+  only way out of the app, so it was replaced with two supported paths.
+- **The Settings window now uses the system's own layout.** The hand-drawn sidebar is
+  gone; macOS renders the standard preferences chrome, so the window picks up the
+  current system appearance instead of opaque colours painted over it. The selected
+  tab is still remembered between openings.
+- Router card in Settings and the active policy row in the popup use concentric
+  corners on macOS 26+, so their curvature follows the container.
+- Install instructions corrected throughout: Control-click → Open has not bypassed
+  Gatekeeper since macOS 15 Sequoia. Approve KeenSwitch once via System Settings →
+  Privacy & Security → **Open Anyway**, or clear the quarantine flag with
+  `xattr -dr com.apple.quarantine`.
+
+### Engineering
+
+- Swift 6 language mode on every target. The app already ran with default `MainActor`
+  isolation, but `SWIFT_VERSION` was still 5.0, so none of the strict concurrency
+  checking was enforced. Value types and stateless helpers are now `nonisolated` at
+  type level rather than member by member.
+- CI and Release moved to the `xcode-27` runner image (GitHub now keys macOS images to
+  a major Xcode version rather than the OS). Release verifies the linked SDK is
+  macosx27 and that the x86_64 slice survives cross-compilation on the arm64 runner.
+  CI keeps a `macos-26` job while the new image is in public preview.
+- `NSApp.activate(ignoringOtherApps:)` → `NSApp.activate()`; the former is marked
+  for deprecation in the macOS 27 SDK.
+- `Scripts/package-release.sh` requires SDK 27, defaults to Xcode 27, and ad-hoc signs
+  as part of the build instead of a separate `codesign --deep` pass.
+- Icon Composer wiring for a layered `AppIcon.icon` is documented in CONTRIBUTING; the
+  app still ships the legacy PNG stack.
+
 ## [1.0.1] — 2026-05-26
 
 ### Fixed
@@ -113,6 +158,7 @@ First public release.
 
 ---
 
-[Unreleased]: https://github.com/Bayrakovsky/KeenSwitch/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/Bayrakovsky/KeenSwitch/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Bayrakovsky/KeenSwitch/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/Bayrakovsky/KeenSwitch/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/Bayrakovsky/KeenSwitch/releases/tag/v1.0.0
