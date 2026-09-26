@@ -84,8 +84,11 @@ A few things every contributor and reporter should know up front:
   `/Applications`, which requires entitlements no sandboxed app gets. This is a
   deliberate trade-off documented in CONTRIBUTING.md.
 - **Releases are signed ad-hoc, not with a Developer ID** and not notarized.
-  Gatekeeper warns on first launch; users either right-click → Open or run
-  `xattr -cr`. This means a compromised GitHub release token = arbitrary code
+  Gatekeeper blocks the first launch; users approve the app once via
+  System Settings → Privacy & Security → **Open Anyway**, or clear the quarantine
+  flag with `xattr -dr com.apple.quarantine`. (Control-click → Open no longer
+  bypasses Gatekeeper — Apple removed that in macOS 15 Sequoia.)
+  This means a compromised GitHub release token = arbitrary code
   delivered to every user. The auto-update flow does a `codesign --verify
   --deep --strict` check before swapping the bundle, but that only catches
   bit-rot, not a maliciously-signed bundle.

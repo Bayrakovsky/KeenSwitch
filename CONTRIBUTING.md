@@ -13,8 +13,11 @@ you need to know to set up a dev environment, run the tests, and ship a clean PR
 
 ## Requirements
 
-- **macOS 14 Sonoma** or later
-- **Xcode 16** or later (CI uses Xcode 26.3 on macOS 26 runners — see `.github/workflows/ci.yml`)
+- **macOS 14 Sonoma** or later to run; **macOS 26.6** or later to build
+  (Xcode 27 installs only on Apple Silicon Macs running Tahoe 26.6+)
+- **Xcode 27** — the project builds against the macOS 27 SDK in Swift 6 language mode.
+  CI runs on the `xcode-27` runner image and keeps a `macos-26` / Xcode 26.3 job as a
+  fallback while that image is in public preview — see `.github/workflows/ci.yml`
 - A Keenetic router on the same network, for manual testing of the connection flow
 
 ## Building
