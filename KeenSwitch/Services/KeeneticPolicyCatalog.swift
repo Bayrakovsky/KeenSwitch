@@ -5,7 +5,7 @@ import Foundation
 // В веб-интерфейсе «Применение политик» есть не только IP Policy (Policy0…),
 // но и встроенные режимы hotspot: permit, deny и наследование с сегмента.
 
-enum KeeneticPolicyCatalog {
+nonisolated enum KeeneticPolicyCatalog {
     nonisolated static let builtInPermit = "permit"
     nonisolated static let builtInDeny = "deny"
     nonisolated static let builtInSegment = "segment"

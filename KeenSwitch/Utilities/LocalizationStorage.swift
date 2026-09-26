@@ -4,7 +4,7 @@ import Foundation
 //
 // Потокобезопасное хранилище bundle/locale без привязки к MainActor.
 
-enum LocalizationStorage: Sendable {
+nonisolated enum LocalizationStorage: Sendable {
     private struct Snapshot: Sendable {
         var bundle: Bundle
         var locale: Locale

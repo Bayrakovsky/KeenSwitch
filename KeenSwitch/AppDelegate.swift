@@ -30,7 +30,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil,
             queue: .main
         ) { _ in
-            AppTermination.markSystemPowerOff()
+            // Наблюдатель поставлен на .main, но замыкание статически nonisolated —
+            // как и остальные точки входа AppKit в этом файле.
+            MainActor.assumeIsolated {
+                AppTermination.markSystemPowerOff()
+            }
         }
 
         MainActor.assumeIsolated {

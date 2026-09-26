@@ -1,7 +1,7 @@
 import Foundation
 
 /// Ошибки при работе с роутером через RCI (HTTP).
-enum KeeneticError: LocalizedError {
+nonisolated enum KeeneticError: LocalizedError {
     case notConfigured
     case invalidURL
     case authenticationFailed

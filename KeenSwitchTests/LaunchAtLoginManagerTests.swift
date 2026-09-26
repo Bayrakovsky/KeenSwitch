@@ -8,7 +8,11 @@ import Testing
 // Полноценная регистрация SMAppService.mainApp из тестовой обвязки невозможна:
 // у тестового бандла нет своего entry в LaunchServices, поэтому система отказывает
 // в register(). Тесты ограничены чтением статуса и идемпотентным sync вызовом.
+//
+// @MainActor: LaunchAtLoginManager вызывается только из AppDelegate и SettingsView,
+// поэтому остаётся MainActor-изолированным (SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor).
 
+@MainActor
 struct LaunchAtLoginManagerTests {
 
     @Test("isEnabled возвращает Bool без падений")

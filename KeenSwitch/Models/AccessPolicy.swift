@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Модели данных с роутера
 
 /// IP-политика маршрутизации на Keenetic (Policy0, Policy1, …).
-struct AccessPolicy: Identifiable, Hashable, Sendable {
+nonisolated struct AccessPolicy: Identifiable, Hashable, Sendable {
     var id: String { name }
     let name: String
     let description: String?
@@ -30,7 +30,7 @@ struct AccessPolicy: Identifiable, Hashable, Sendable {
     }
 }
 
-struct NetworkDevice: Identifiable, Hashable, Sendable {
+nonisolated struct NetworkDevice: Identifiable, Hashable, Sendable {
     var id: String { mac }
     let mac: String
     let name: String?
@@ -53,7 +53,7 @@ struct NetworkDevice: Identifiable, Hashable, Sendable {
     }
 }
 
-extension NetworkDevice {
+nonisolated extension NetworkDevice {
     /// Сначала закреплённые (в порядке закрепления), затем в сети, затем остальные; внутри группы — по имени.
     nonisolated static func sortedForDisplay(_ devices: [NetworkDevice], pinnedMACs: [String] = []) -> [NetworkDevice] {
         guard !pinnedMACs.isEmpty else {
@@ -93,7 +93,7 @@ extension NetworkDevice {
 }
 
 /// Состояние последней попытки связи с роутером (для UI настроек и статуса).
-enum ConnectionState: Equatable, Sendable {
+nonisolated enum ConnectionState: Equatable, Sendable {
     case disconnected
     case connecting
     case connected
