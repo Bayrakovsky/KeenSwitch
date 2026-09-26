@@ -4,7 +4,7 @@ import AppKit
 //
 // Тихий старт → только menu bar. Обычный → menu bar + главное окно.
 // Закрытие окна / Dock «Завершить» → скрыть окно и убрать иконку из Dock; menu bar остаётся.
-// Полный выход — ПКМ по иконке в строке меню.
+// Полный выход — ⌘Q в меню приложения или кнопка Quit в popup строки меню.
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     override init() {
@@ -32,10 +32,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ) { _ in
             AppTermination.markSystemPowerOff()
         }
-
-#if os(macOS)
-        StatusBarQuitMenuAttacher.install()
-#endif
 
         MainActor.assumeIsolated {
             if AppLaunchMode.shouldShowMainWindowAtLaunch {

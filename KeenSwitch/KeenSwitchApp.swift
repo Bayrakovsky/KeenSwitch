@@ -20,8 +20,16 @@ struct KeenSwitchApp: App {
         .defaultSize(width: 720, height: 520)
         .commands {
             CommandGroup(replacing: .newItem) { }
-            // Полный выход — ПКМ по иконке в строке меню (StatusBarQuitMenuAttacher).
-            CommandGroup(replacing: .appTermination) { }
+            // Свой пункт вместо стандартного Quit: он идёт через AppTermination.quit(),
+            // которое выставляет userRequestedQuit и разрешает настоящее завершение в
+            // applicationShouldTerminate. Dock → «Завершить» этот флаг не выставляет,
+            // поэтому по-прежнему просто прячет приложение в строку меню.
+            CommandGroup(replacing: .appTermination) {
+                Button(L10n.tr("Quit KeenSwitch")) {
+                    AppTermination.quit()
+                }
+                .keyboardShortcut("q", modifiers: .command)
+            }
         }
 
 #if os(macOS)

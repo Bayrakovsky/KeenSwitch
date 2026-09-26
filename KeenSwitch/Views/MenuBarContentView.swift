@@ -20,7 +20,7 @@ struct MenuBarContentView: View {
             Divider()
             footer
         }
-        .frame(width: 340)
+        .frame(width: 380)
         .task {
             await viewModel.refreshIfNeeded()
         }
@@ -230,6 +230,13 @@ struct MenuBarContentView: View {
                 NSApp.activate(ignoringOtherApps: true)
                 openSettings()
             }
+
+            // Основной путь выхода: меню приложения существует только в .regular,
+            // а этот popup доступен всегда — включая тихий старт в .accessory.
+            Button(L10n.tr("Quit")) {
+                AppTermination.quit()
+            }
+            .help(L10n.tr("Quit KeenSwitch"))
         }
         .padding(12)
     }
