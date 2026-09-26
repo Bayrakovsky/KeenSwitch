@@ -7,8 +7,55 @@ on:
     branches: [main, master]
 
 jobs:
+  # Основной прогон: образ, привязанный к мажорной версии Xcode (новая схема лейблов
+  # GitHub — раньше образ выбирался по версии macOS). xcode-27 = macOS 27, arm64.
   build-and-test:
+    runs-on: xcode-27
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Путь к Xcode на образе не хардкодим: пока образ в public preview его
+      # инвентарь меняется. Проверяем, что по умолчанию выбран именно Xcode 27.
+      - name: Verify toolchain
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcrun --sdk macosx --show-sdk-version
+          MAJOR="$(xcodebuild -version | head -1 | sed -E 's/^Xcode ([0-9]+).*/\1/')"
+          if [[ "$MAJOR" != "27" ]]; then
+            echo "::error::Expected Xcode 27, got $(xcodebuild -version | head -1)"
+            exit 1
+          fi
+
+      - name: Build
+        run: |
+          xcodebuild \
+            -project KeenSwitch.xcodeproj \
+            -scheme KeenSwitch \
+            -configuration Debug \
+            -sdk macosx \
+            -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Unit tests
+        run: |
+          xcodebuild \
+            -project KeenSwitch.xcodeproj \
+            -scheme KeenSwitch \
+            -configuration Debug \
+            -sdk macosx \
+            -destination 'platform=macOS' \
+            -only-testing:KeenSwitchTests \
+            CODE_SIGNING_ALLOWED=NO \
+            test
+
+  # Страховочный прогон на предыдущем образе, пока xcode-27 не вышел из public preview.
+  # Удалить, когда образ станет GA.
+  build-and-test-xcode26:
     runs-on: macos-26
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
