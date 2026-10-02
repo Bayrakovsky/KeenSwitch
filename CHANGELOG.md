@@ -9,29 +9,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 _Changes that will land in the next release will be listed here._
 
-## [1.1.0] — 2026-09-26
+## [1.1.0] — 2026-10-02
 
 Built with Xcode 27 against the macOS 27 SDK. Minimum stays **macOS 14 Sonoma**,
 builds stay universal (Apple Silicon + Intel).
-
-### Fixed
-
-- **The policy menu in the main window never marked the policy a device is currently
-  on.** Opening the `…` menu in a device row showed the list with nothing selected, so
-  you had to read the row text to know where the device was routed. The menu now draws a
-  proper checkmark next to the active policy.
-  *Why it happened:* the active item was built as `Label(title, systemImage: "checkmark")`,
-  and macOS drops `Label` icons when SwiftUI bridges menu content to `NSMenuItem` — so the
-  active and inactive items rendered identically. It is now an inline `Picker`, which sets
-  the menu item's state and also brings keyboard navigation and a "selected" state for
-  VoiceOver.
 
 ### Changed
 
 - **Quitting the app works differently.** Right-clicking the menu bar icon no longer
   opens a Quit menu. Use **Quit** in the menu bar popup, or **⌘Q** when the main window
   is open. Closing the window and Dock → Quit still just hide KeenSwitch in the menu
-  bar, exactly as before.
+  bar, exactly as before. The popup is slightly wider to fit the extra button.
   *Why:* quitting used to depend entirely on an unsupported trick — the app hunted
   through its own windows for the status bar item and hijacked that button's
   target/action. macOS 27 rewrote the menu bar to render as a single window, which
@@ -48,6 +36,19 @@ builds stay universal (Apple Silicon + Intel).
   Gatekeeper since macOS 15 Sequoia. Approve KeenSwitch once via System Settings →
   Privacy & Security → **Open Anyway**, or clear the quarantine flag with
   `xattr -dr com.apple.quarantine`.
+
+### Fixed
+
+- **The policy menu in the main window never marked the policy a device is currently
+  on.** Opening the `…` menu in a device row showed the list with nothing selected, so
+  you had to read the row text to know where the device was routed. The menu now draws a
+  proper checkmark next to the active policy.
+  *Why it happened:* the active item was built as `Label(title, systemImage: "checkmark")`,
+  relying on SwiftUI drawing that icon in the menu item. That worked on macOS 26 —
+  `docs/screen-main.png` was captured with the checkmark visible — and stopped on
+  macOS 27, leaving the active and inactive items rendered identically. It is now an inline `Picker`, which does not depend
+  on an icon being drawn: it sets the menu item's own selection state, and brings keyboard
+  navigation and a "selected" state for VoiceOver with it.
 
 ### Engineering
 

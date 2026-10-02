@@ -166,11 +166,13 @@ private struct DeviceRow: View {
                 .accessibilityLabel(isPinned ? L10n.tr("Unpin") : L10n.tr("Pin"))
 
                 Menu {
-                    // Picker, а не ForEach(Button): в меню на macOS иконка из
-                    // Label(_, systemImage:) не отрисовывается, поэтому активный пункт
-                    // ничем не отличался от остальных. Inline-Picker выставляет пункту
-                    // NSMenuItem.state = .on — галочка в штатной колонке, плюс
-                    // навигация с клавиатуры и состояние «выбрано» для VoiceOver.
+                    // Picker, а не ForEach(Button) с Label(_, systemImage: "checkmark"):
+                    // на macOS 27 иконка из Label в пункте меню перестала рисоваться,
+                    // и активная политика ничем не отличалась от остальных. Раньше это
+                    // работало — видно на docs/screen-main.png, снятом на macOS 26.
+                    // Inline-Picker не зависит от отрисовки иконки: он выставляет пункту
+                    // NSMenuItem.state, то есть галочку в штатной колонке состояния,
+                    // плюс даёт навигацию с клавиатуры и «выбрано» для VoiceOver.
                     Picker(L10n.tr("Select Policy"), selection: selectedPolicyName) {
                         ForEach(policies) { policy in
                             Text(policy.localizedDisplayTitle)
