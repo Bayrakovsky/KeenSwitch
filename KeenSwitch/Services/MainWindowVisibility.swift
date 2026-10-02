@@ -199,7 +199,7 @@ enum MainWindowVisibility {
     }
 
     private static func bringToFront(_ window: NSWindow) {
-        NSApp.activate(ignoringOtherApps: true)
+        NSApp.activate()
         window.makeKeyAndOrderFront(nil)
         DispatchQueue.main.async {
             window.makeKeyAndOrderFront(nil)

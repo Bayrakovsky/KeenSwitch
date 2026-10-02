@@ -1,7 +1,7 @@
 import Foundation
 
 /// Настройки самого приложения macOS (не роутера).
-struct AppPreferences: Codable, Equatable, Sendable {
+nonisolated struct AppPreferences: Codable, Equatable, Sendable {
     /// Добавить KeenSwitch в «Объекты входа» (SMAppService).
     var launchAtLogin: Bool
     /// При автозапуске не показывать главное окно — только иконка в строке меню.

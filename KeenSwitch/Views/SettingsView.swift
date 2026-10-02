@@ -42,92 +42,28 @@ struct SettingsView: View {
     @AppStorage("settingsSelectedPane") private var selection: SettingsPane = .connection
 
     var body: some View {
-        HStack(spacing: 0) {
-            SettingsSidebar(selection: $selection)
-            Divider()
-            settingsDetail
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(Color(nsColor: .windowBackgroundColor))
+        // Нативный TabView в сцене Settings: хрому окна рисует сама macOS, поэтому
+        // настройки бесплатно получают оформление текущей версии системы. Рукописный
+        // сайдбар с непрозрачной заливкой не получал ни стекла, ни правок macOS 27
+        // (сайдбар до края окна, semibold-выделение, стеклянные элементы над ним).
+        TabView(selection: $selection) {
+            ConnectionSettingsTab().settingsPane(.connection)
+            RoutingSettingsTab().settingsPane(.routing)
+            LanguageSettingsTab().settingsPane(.language)
+            LaunchSettingsTab().settingsPane(.launch)
+            UpdatesSettingsTab().settingsPane(.updates)
         }
         .frame(minWidth: 600, minHeight: 600)
         .settingsWindowTitle(L10n.tr("App Settings Window Title"))
     }
-
-    @ViewBuilder
-    private var settingsDetail: some View {
-        switch selection {
-        case .connection:
-            ConnectionSettingsTab()
-        case .routing:
-            RoutingSettingsTab()
-        case .language:
-            LanguageSettingsTab()
-        case .launch:
-            LaunchSettingsTab()
-        case .updates:
-            UpdatesSettingsTab()
-        }
-    }
 }
 
-private struct SettingsSidebar: View {
-    @Binding var selection: SettingsPane
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                Image(systemName: "arrow.triangle.branch")
-                    .font(.title2)
-                    .foregroundStyle(.tint)
-                    .symbolRenderingMode(.hierarchical)
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("KeenSwitch")
-                        .font(.headline)
-                    Text(L10n.tr("Settings"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 20)
-            .padding(.bottom, 16)
-
-            VStack(alignment: .leading, spacing: 2) {
-                ForEach(SettingsPane.allCases) { pane in
-                    sidebarButton(pane)
-                }
-            }
-            .padding(.horizontal, 10)
-
-            Spacer(minLength: 0)
-        }
-        .frame(width: 196)
-        .background(Color(nsColor: .controlBackgroundColor))
-    }
-
-    private func sidebarButton(_ pane: SettingsPane) -> some View {
-        let isSelected = selection == pane
-
-        return Button {
-            selection = pane
-        } label: {
-            Label(pane.title, systemImage: pane.symbol)
-                .labelStyle(.titleAndIcon)
-                .font(.body)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .contentShape(RoundedRectangle(cornerRadius: 8))
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
-        .background {
-            if isSelected {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.accentColor.opacity(0.14))
-            }
-        }
+private extension View {
+    /// Вкладка окна настроек: подпись с иконкой и тег для $selection.
+    func settingsPane(_ pane: SettingsPane) -> some View {
+        frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .tabItem { Label(pane.title, systemImage: pane.symbol) }
+            .tag(pane)
     }
 }
 
@@ -260,12 +196,23 @@ private struct RouterConnectionStatusCard: View {
         }
         .padding(12)
         .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
+            if #available(macOS 26, *) {
+                ConcentricRectangle(corners: .concentric(minimum: .fixed(10)))
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            } else {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            }
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(borderColor.opacity(0.35), lineWidth: 1)
+            if #available(macOS 26, *) {
+                // ConcentricRectangle не InsettableShape, поэтому stroke, а не strokeBorder.
+                ConcentricRectangle(corners: .concentric(minimum: .fixed(10)))
+                    .stroke(borderColor.opacity(0.35), lineWidth: 1)
+            } else {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(borderColor.opacity(0.35), lineWidth: 1)
+            }
         }
         .accessibilityElement(children: .combine)
     }

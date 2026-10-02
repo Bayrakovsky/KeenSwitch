@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Информация о роутере (RCI show version / show system)
 
-struct RouterInfo: Equatable, Sendable {
+nonisolated struct RouterInfo: Equatable, Sendable {
     /// Имя из `show system hostname`, если задано.
     let hostname: String?
     /// Маркетинговое имя модели (`device` в show version).
@@ -39,7 +39,7 @@ struct RouterInfo: Equatable, Sendable {
         return nil
     }
 
-    nonisolated func withHostname(_ hostname: String?) -> RouterInfo {
+    func withHostname(_ hostname: String?) -> RouterInfo {
         RouterInfo(
             hostname: hostname,
             model: model,

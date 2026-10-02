@@ -24,6 +24,8 @@ Package.resolved
 
 # Артефакты локальной сборки
 *.app.zip
+KeenSwitch-v*-macOS.zip
+checksums.txt
 dist/
 release/
 

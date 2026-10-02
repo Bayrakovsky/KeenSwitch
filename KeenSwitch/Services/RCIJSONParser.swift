@@ -6,20 +6,20 @@ import Foundation
 // Роутер отдаёт вложенные деревья (show → ip → policy/host); парсер обходит их
 // и собирает модели AccessPolicy и NetworkDevice для UI.
 
-enum RCIJSONParser {
+nonisolated enum RCIJSONParser {
     /// Разбирает список политик маршрутизации из ответа RCI.
-    nonisolated static func policies(from data: Data) throws -> [AccessPolicy] {
+    static func policies(from data: Data) throws -> [AccessPolicy] {
         let json = try JSONSerialization.jsonObject(with: data)
         return mergePolicies(extractPolicies(from: json))
     }
 
     /// Объединяет списки политик с разных RCI-эндпоинтов (live show и сохранённый rc).
-    nonisolated static func mergePolicies(_ lists: [[AccessPolicy]]) -> [AccessPolicy] {
+    static func mergePolicies(_ lists: [[AccessPolicy]]) -> [AccessPolicy] {
         mergePolicies(lists.flatMap { $0 })
     }
 
     /// Дедублицирует политики по имени, объединяя поля description и routingInterface.
-    nonisolated static func mergePolicies(_ policies: [AccessPolicy]) -> [AccessPolicy] {
+    static func mergePolicies(_ policies: [AccessPolicy]) -> [AccessPolicy] {
         var byName: [String: AccessPolicy] = [:]
         for policy in policies {
             if let existing = byName[policy.name] {
@@ -36,7 +36,7 @@ enum RCIJSONParser {
     }
 
     /// Выводит имена политик из поля currentPolicy устройств — резерв, если API политик недоступен.
-    nonisolated static func policiesInferredFromDevices(_ devices: [NetworkDevice]) -> [AccessPolicy] {
+    static func policiesInferredFromDevices(_ devices: [NetworkDevice]) -> [AccessPolicy] {
         let names = devices.compactMap(\.currentPolicy).filter { !$0.isEmpty }
         return Array(Set(names))
             .sorted()
@@ -44,14 +44,14 @@ enum RCIJSONParser {
     }
 
     /// Разбирает список устройств из ответа `show/ip/hotspot` и дедублицирует по MAC.
-    nonisolated static func devices(from data: Data) throws -> [NetworkDevice] {
+    static func devices(from data: Data) throws -> [NetworkDevice] {
         let json = try JSONSerialization.jsonObject(with: data)
         let devices = deduplicateHosts(extractHosts(from: json))
         return NetworkDevice.sortedForDisplay(devices)
     }
 
     /// Разбирает информацию о роутере из ответа `show/version`.
-    nonisolated static func routerInfo(from data: Data) throws -> RouterInfo {
+    static func routerInfo(from data: Data) throws -> RouterInfo {
         let json = try JSONSerialization.jsonObject(with: data)
         guard let version = findVersionNode(in: json) else {
             throw KeeneticError.apiError(L10n.tr("Failed To Read Version Data"))
@@ -60,7 +60,7 @@ enum RCIJSONParser {
     }
 
     /// Извлекает hostname роутера из ответа `show/system` (дополнение к show/version).
-    nonisolated static func systemHostname(in data: Data) -> String? {
+    static func systemHostname(in data: Data) -> String? {
         guard let json = try? JSONSerialization.jsonObject(with: data) else { return nil }
         if let system = findSystemNode(in: json), let hostname = stringValue(system["hostname"]) {
             return hostname
@@ -69,13 +69,13 @@ enum RCIJSONParser {
     }
 
     /// Назначенные политики из конфигурации (`show/rc/ip/hotspot`, `ip/hotspot/host`).
-    nonisolated static func hostPolicies(from data: Data) throws -> [String: String] {
+    static func hostPolicies(from data: Data) throws -> [String: String] {
         let json = try JSONSerialization.jsonObject(with: data)
         return extractHostPolicyMap(from: json)
     }
 
     /// Подставляет политики из конфигурации роутера; без записи в конфиге — `nil`.
-    nonisolated static func applyingHostPolicies(_ policies: [String: String], to devices: [NetworkDevice]) -> [NetworkDevice] {
+    static func applyingHostPolicies(_ policies: [String: String], to devices: [NetworkDevice]) -> [NetworkDevice] {
         devices.map { device in
             var updated = device
             updated.currentPolicy = policies[device.mac]
@@ -84,7 +84,7 @@ enum RCIJSONParser {
     }
 
     /// Проверяет ответ RCI после команды изменения настроек.
-    nonisolated static func validateCommandResponse(_ data: Data) throws {
+    static func validateCommandResponse(_ data: Data) throws {
         for entry in statusEntries(in: data) {
             if entry.isError {
                 throw KeeneticError.apiError(entry.message)
@@ -93,11 +93,11 @@ enum RCIJSONParser {
     }
 
     /// Первое не-ошибочное сообщение из RCI-ответа (для отображения статуса в UI).
-    nonisolated static func commandStatusMessage(in data: Data) -> String? {
+    static func commandStatusMessage(in data: Data) -> String? {
         statusEntries(in: data).first { !$0.isError }?.message
     }
 
-    private nonisolated static func statusEntries(in data: Data) -> [StatusEntry] {
+    private static func statusEntries(in data: Data) -> [StatusEntry] {
         guard let json = try? JSONSerialization.jsonObject(with: data) else { return [] }
         return collectStatusEntries(from: json)
     }
@@ -107,7 +107,7 @@ enum RCIJSONParser {
         let message: String
     }
 
-    private nonisolated static func collectStatusEntries(from node: Any) -> [StatusEntry] {
+    private static func collectStatusEntries(from node: Any) -> [StatusEntry] {
         var results: [StatusEntry] = []
 
         func visit(_ node: Any) {
@@ -135,7 +135,7 @@ enum RCIJSONParser {
         return results
     }
 
-    private nonisolated static func deduplicateHosts(_ hosts: [NetworkDevice]) -> [NetworkDevice] {
+    private static func deduplicateHosts(_ hosts: [NetworkDevice]) -> [NetworkDevice] {
         var byMAC: [String: NetworkDevice] = [:]
         for host in hosts {
             if let existing = byMAC[host.mac] {
@@ -147,7 +147,7 @@ enum RCIJSONParser {
         return Array(byMAC.values)
     }
 
-    private nonisolated static func mergeHosts(_ lhs: NetworkDevice, _ rhs: NetworkDevice) -> NetworkDevice {
+    private static func mergeHosts(_ lhs: NetworkDevice, _ rhs: NetworkDevice) -> NetworkDevice {
         NetworkDevice(
             mac: lhs.mac,
             name: preferred(lhs.name, rhs.name),
@@ -158,14 +158,14 @@ enum RCIJSONParser {
         )
     }
 
-    private nonisolated static func preferred(_ lhs: String?, _ rhs: String?) -> String? {
+    private static func preferred(_ lhs: String?, _ rhs: String?) -> String? {
         if let lhs, !lhs.isEmpty { return lhs }
         if let rhs, !rhs.isEmpty { return rhs }
         return nil
     }
 
     /// Сообщение об ошибке RCI для показа пользователю; nil если ответ успешный.
-    nonisolated static func apiErrorMessage(in data: Data) -> String? {
+    static func apiErrorMessage(in data: Data) -> String? {
         if let error = statusEntries(in: data).first(where: \.isError) {
             return error.message
         }
@@ -174,7 +174,7 @@ enum RCIJSONParser {
 
     // MARK: - Извлечение политик
 
-    private nonisolated static func extractPolicies(from json: Any) -> [AccessPolicy] {
+    private static func extractPolicies(from json: Any) -> [AccessPolicy] {
         var results: [AccessPolicy] = []
 
         func visit(_ node: Any) {
@@ -218,7 +218,7 @@ enum RCIJSONParser {
         return results
     }
 
-    private nonisolated static func policiesFromIPNode(_ dict: [String: Any]) -> [AccessPolicy] {
+    private static func policiesFromIPNode(_ dict: [String: Any]) -> [AccessPolicy] {
         var results: [AccessPolicy] = []
         guard let policyNode = dict["policy"] else { return results }
 
@@ -263,7 +263,7 @@ enum RCIJSONParser {
     }
 
     /// `show rc ip policy` — последовательность config-блоков: policy → description → permit.
-    private nonisolated static func policiesFromRcConfigSections(_ sections: [[String: Any]]) -> [AccessPolicy] {
+    private static func policiesFromRcConfigSections(_ sections: [[String: Any]]) -> [AccessPolicy] {
         var policies: [AccessPolicy] = []
         var currentName: String?
         var currentDescription: String?
@@ -346,7 +346,7 @@ enum RCIJSONParser {
     }
 
     /// Один элемент policy из CLI: `policy, name = Policy0, description = …`
-    private nonisolated static func policyFromDictionary(_ dict: [String: Any], fallbackName: String? = nil) -> AccessPolicy? {
+    private static func policyFromDictionary(_ dict: [String: Any], fallbackName: String? = nil) -> AccessPolicy? {
         var name = stringValue(dict["name"]) ?? stringValue(dict["id"]) ?? fallbackName
 
         // В RCI имя иногда лежит в ключе `policy` как строка "Policy0"
@@ -374,7 +374,7 @@ enum RCIJSONParser {
         )
     }
 
-    private nonisolated static func primaryRoutingInterface(from dict: [String: Any]) -> String? {
+    private static func primaryRoutingInterface(from dict: [String: Any]) -> String? {
         for key in ["route4", "route", "route6"] {
             if let iface = interfaceFromRoutes(dict[key]) {
                 return iface
@@ -383,7 +383,7 @@ enum RCIJSONParser {
         return primaryInterfaceFromPermit(dict)
     }
 
-    private nonisolated static func primaryInterfaceFromPermit(_ dict: [String: Any]) -> String? {
+    private static func primaryInterfaceFromPermit(_ dict: [String: Any]) -> String? {
         for permit in permitDictionaries(in: dict) {
             guard isPermitEnabled(permit),
                   let iface = stringValue(permit["interface"]),
@@ -393,7 +393,7 @@ enum RCIJSONParser {
         return nil
     }
 
-    private nonisolated static func permitDictionaries(in dict: [String: Any]) -> [[String: Any]] {
+    private static func permitDictionaries(in dict: [String: Any]) -> [[String: Any]] {
         switch dict["permit"] {
         case let permit as [String: Any]:
             return [permit]
@@ -406,19 +406,19 @@ enum RCIJSONParser {
         }
     }
 
-    private nonisolated static func isPermitSection(_ dict: [String: Any]) -> Bool {
+    private static func isPermitSection(_ dict: [String: Any]) -> Bool {
         stringValue(dict["name"])?.lowercased() == "permit"
             || dict["interface"] != nil
             || dict["enabled"] != nil
     }
 
-    private nonisolated static func isPermitEnabled(_ dict: [String: Any]) -> Bool {
+    private static func isPermitEnabled(_ dict: [String: Any]) -> Bool {
         if boolValue(dict["no"]) == true { return false }
         if let enabled = boolValue(dict["enabled"]) { return enabled }
         return true
     }
 
-    private nonisolated static func interfaceFromRoutes(_ node: Any?) -> String? {
+    private static func interfaceFromRoutes(_ node: Any?) -> String? {
         guard let node else { return nil }
 
         var routes: [[String: Any]] = []
@@ -451,17 +451,17 @@ enum RCIJSONParser {
     }
 
     /// Имя таблицы политик Keenetic: Policy0, Policy1, …
-    private nonisolated static func isPolicyTableKey(_ name: String) -> Bool {
+    private static func isPolicyTableKey(_ name: String) -> Bool {
         name.range(of: #"^Policy\d+$"#, options: .regularExpression) != nil
     }
 
-    private nonisolated static func isRouteKey(_ key: String) -> Bool {
+    private static func isRouteKey(_ key: String) -> Bool {
         key == "route" || key == "route4" || key == "route6" || key.hasPrefix("route")
     }
 
     // MARK: - Извлечение устройств
 
-    private nonisolated static func extractHosts(from json: Any) -> [NetworkDevice] {
+    private static func extractHosts(from json: Any) -> [NetworkDevice] {
         var results: [NetworkDevice] = []
 
         func visit(_ node: Any) {
@@ -487,7 +487,7 @@ enum RCIJSONParser {
         return results
     }
 
-    private nonisolated static func hostsFromNode(_ dict: [String: Any]) -> [NetworkDevice] {
+    private static func hostsFromNode(_ dict: [String: Any]) -> [NetworkDevice] {
         var results: [NetworkDevice] = []
 
         let hostNode = dict["host"] ?? (dict["hotspot"] as? [String: Any])?["host"]
@@ -516,7 +516,7 @@ enum RCIJSONParser {
         return results
     }
 
-    private nonisolated static func extractHostPolicyMap(from json: Any) -> [String: String] {
+    private static func extractHostPolicyMap(from json: Any) -> [String: String] {
         var map: [String: String] = [:]
 
         func ingest(_ dict: [String: Any], fallbackMAC: String? = nil) {
@@ -546,7 +546,7 @@ enum RCIJSONParser {
         return map
     }
 
-    private nonisolated static func rawHostDictionaries(
+    private static func rawHostDictionaries(
         in dict: [String: Any]
     ) -> [([String: Any], String?)] {
         let hostNode = dict["host"] ?? (dict["hotspot"] as? [String: Any])?["host"]
@@ -576,7 +576,7 @@ enum RCIJSONParser {
     }
 
     /// Назначенная политика устройства: PolicyN, permit, deny.
-    private nonisolated static func hostPolicyName(from dict: [String: Any]) -> String? {
+    private static func hostPolicyName(from dict: [String: Any]) -> String? {
         if let policyField = dict["policy"],
            let name = parseAssignedPolicyName(policyField) {
             return name
@@ -592,7 +592,7 @@ enum RCIJSONParser {
         return nil
     }
 
-    private nonisolated static func parseAssignedPolicyName(_ value: Any?) -> String? {
+    private static func parseAssignedPolicyName(_ value: Any?) -> String? {
         switch value {
         case let name as String:
             return isIPPolicyName(name) ? name : nil
@@ -610,13 +610,13 @@ enum RCIJSONParser {
         }
     }
 
-    private nonisolated static func isIPPolicyName(_ name: String) -> Bool {
+    private static func isIPPolicyName(_ name: String) -> Bool {
         let lowered = name.lowercased()
         if lowered == "permit" || lowered == "deny" { return false }
         return isPolicyTableKey(name)
     }
 
-    private nonisolated static func hostFromDictionary(_ dict: [String: Any], fallbackMAC: String? = nil) -> NetworkDevice? {
+    private static func hostFromDictionary(_ dict: [String: Any], fallbackMAC: String? = nil) -> NetworkDevice? {
         let mac = (stringValue(dict["mac"]) ?? fallbackMAC)?.uppercased()
         guard let mac, mac.contains(":") else { return nil }
 
@@ -631,7 +631,7 @@ enum RCIJSONParser {
         )
     }
 
-    private nonisolated static func boolValue(_ value: Any?) -> Bool? {
+    private static func boolValue(_ value: Any?) -> Bool? {
         switch value {
         case let flag as Bool:
             return flag
@@ -651,7 +651,7 @@ enum RCIJSONParser {
         }
     }
 
-    private nonisolated static func routerInfo(fromVersion version: [String: Any]) -> RouterInfo {
+    private static func routerInfo(fromVersion version: [String: Any]) -> RouterInfo {
         let model = stringValue(version["device"])
             ?? stringValue(version["model"])
             ?? "Keenetic"
@@ -666,7 +666,7 @@ enum RCIJSONParser {
         )
     }
 
-    private nonisolated static func findVersionNode(in json: Any) -> [String: Any]? {
+    private static func findVersionNode(in json: Any) -> [String: Any]? {
         if let dict = json as? [String: Any] {
             if dict["device"] != nil || dict["release"] != nil {
                 return dict
@@ -693,7 +693,7 @@ enum RCIJSONParser {
         return nil
     }
 
-    private nonisolated static func findSystemNode(in json: Any) -> [String: Any]? {
+    private static func findSystemNode(in json: Any) -> [String: Any]? {
         if let dict = json as? [String: Any] {
             if dict["hostname"] != nil {
                 return dict
@@ -720,7 +720,7 @@ enum RCIJSONParser {
         return nil
     }
 
-    private nonisolated static func stringValue(_ value: Any?) -> String? {
+    private static func stringValue(_ value: Any?) -> String? {
         switch value {
         case let string as String:
             return string.isEmpty ? nil : string

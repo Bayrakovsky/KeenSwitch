@@ -1,7 +1,7 @@
 import Foundation
 
 /// Параметры HTTP-подключения к роутеру (RCI).
-struct RouterSettings: Codable, Sendable, Equatable {
+nonisolated struct RouterSettings: Codable, Sendable, Equatable {
     var host: String
     var port: Int
     var useHTTPS: Bool

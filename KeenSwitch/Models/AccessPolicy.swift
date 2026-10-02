@@ -3,14 +3,14 @@ import Foundation
 // MARK: - Модели данных с роутера
 
 /// IP-политика маршрутизации на Keenetic (Policy0, Policy1, …).
-struct AccessPolicy: Identifiable, Hashable, Sendable {
+nonisolated struct AccessPolicy: Identifiable, Hashable, Sendable {
     var id: String { name }
     let name: String
     let description: String?
     /// Основной интерфейс маршрута по умолчанию (OpenVPN0, Home, …).
     let routingInterface: String?
 
-    nonisolated var displayTitle: String {
+    var displayTitle: String {
         if let description, !description.isEmpty {
             return description
         }
@@ -18,11 +18,11 @@ struct AccessPolicy: Identifiable, Hashable, Sendable {
     }
 
     /// Заголовок с учётом локализации встроенных режимов Keenetic.
-    nonisolated var localizedDisplayTitle: String {
+    var localizedDisplayTitle: String {
         KeeneticPolicyCatalog.localizedTitle(for: name) ?? displayTitle
     }
 
-    nonisolated var displaySubtitle: String {
+    var displaySubtitle: String {
         if let description, !description.isEmpty {
             return name
         }
@@ -30,7 +30,7 @@ struct AccessPolicy: Identifiable, Hashable, Sendable {
     }
 }
 
-struct NetworkDevice: Identifiable, Hashable, Sendable {
+nonisolated struct NetworkDevice: Identifiable, Hashable, Sendable {
     var id: String { mac }
     let mac: String
     let name: String?
@@ -40,7 +40,7 @@ struct NetworkDevice: Identifiable, Hashable, Sendable {
     let isOnline: Bool
     var currentPolicy: String?
 
-    nonisolated var displayName: String {
+    var displayName: String {
         if let name, !name.isEmpty {
             return name
         }
@@ -53,9 +53,9 @@ struct NetworkDevice: Identifiable, Hashable, Sendable {
     }
 }
 
-extension NetworkDevice {
+nonisolated extension NetworkDevice {
     /// Сначала закреплённые (в порядке закрепления), затем в сети, затем остальные; внутри группы — по имени.
-    nonisolated static func sortedForDisplay(_ devices: [NetworkDevice], pinnedMACs: [String] = []) -> [NetworkDevice] {
+    static func sortedForDisplay(_ devices: [NetworkDevice], pinnedMACs: [String] = []) -> [NetworkDevice] {
         guard !pinnedMACs.isEmpty else {
             return sortedByReachability(devices)
         }
@@ -68,7 +68,7 @@ extension NetworkDevice {
         return result
     }
 
-    private nonisolated static func sortedByReachability(_ devices: [NetworkDevice]) -> [NetworkDevice] {
+    private static func sortedByReachability(_ devices: [NetworkDevice]) -> [NetworkDevice] {
         devices.sorted { lhs, rhs in
             if lhs.isOnline != rhs.isOnline {
                 return lhs.isOnline && !rhs.isOnline
@@ -93,7 +93,7 @@ extension NetworkDevice {
 }
 
 /// Состояние последней попытки связи с роутером (для UI настроек и статуса).
-enum ConnectionState: Equatable, Sendable {
+nonisolated enum ConnectionState: Equatable, Sendable {
     case disconnected
     case connecting
     case connected

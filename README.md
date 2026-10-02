@@ -16,10 +16,13 @@ Select a device, pick a policy (Default, VPN, No Internet, …), done.
 
 ## Requirements
 
-- **macOS 14 Sonoma** or later
+- **macOS 14 Sonoma** or later — Apple Silicon or Intel
+  *(builds are universal; note that macOS 27 Golden Gate itself requires Apple Silicon)*
 - Keenetic router running **KeeneticOS 3.x** or later
 - **Network Policy** component installed on the router  
   *(System Components → Network Policy)*
+
+Tested on **macOS 27 Golden Gate**; built against the macOS 27 SDK.
 
 ## Supported routers
 
@@ -51,17 +54,35 @@ If your model is not listed but runs KeeneticOS 3.x with the Network Policy comp
 - Built-in **auto-update** from GitHub Releases
 - Interface in **English and Russian**
 
+Closing the window or choosing **Quit** in the Dock menu keeps KeenSwitch running in the
+menu bar. To quit for real, use **Quit** in the menu bar popup, or **⌘Q** when the main
+window is open.
+
 ## Installation
 
 1. Download **`KeenSwitch-vX.Y.Z-macOS.zip`** from [Releases](https://github.com/Bayrakovsky/KeenSwitch/releases)
 2. Unzip and drag **KeenSwitch.app** to **Applications**
-3. On first launch macOS may block an unsigned app — right-click → **Open** → **Open**
+3. Double-click it. Gatekeeper will refuse to open it — click **Done**
+4. Open **System Settings → Privacy & Security**, scroll down to **Security**, and click
+   **Open Anyway** next to the KeenSwitch message, then confirm with **Open**
 
-Or remove the quarantine flag via Terminal:
+You only need to do step 4 once.
+
+> **Control-clicking the app and choosing Open does not work.** Apple removed that
+> Gatekeeper shortcut in macOS 15 Sequoia — older instructions you may find elsewhere
+> are out of date.
+
+Prefer the terminal? Clear the quarantine flag instead:
 
 ```bash
-xattr -cr /Applications/KeenSwitch.app && open -a KeenSwitch
+xattr -dr com.apple.quarantine /Applications/KeenSwitch.app && open -a KeenSwitch
 ```
+
+**Why the warning?** Releases are signed ad-hoc and not notarized, because the project has
+no paid Apple Developer ID. Gatekeeper therefore blocks the first launch of every download.
+Each release publishes `checksums.txt` — verify the ZIP with
+`shasum -a 256 KeenSwitch-vX.Y.Z-macOS.zip` if you want to confirm what you are running.
+See [SECURITY.md](SECURITY.md).
 
 ## Setup
 
@@ -89,7 +110,7 @@ man-in-the-middle on your network can't intercept the router password.
 
 ## Build from source
 
-Requires **Xcode 16** and macOS 14+.
+Requires **Xcode 27** (macOS 27 SDK). The project builds in Swift 6 language mode.
 
 ```bash
 git clone https://github.com/Bayrakovsky/KeenSwitch.git

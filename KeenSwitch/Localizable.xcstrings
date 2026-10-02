@@ -1388,6 +1388,22 @@
         }
       }
     },
+    "Quit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quit"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Завершить"
+          }
+        }
+      }
+    },
     "Quit KeenSwitch" : {
       "localizations" : {
         "en" : {

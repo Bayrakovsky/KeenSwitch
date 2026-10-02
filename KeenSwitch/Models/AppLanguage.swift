@@ -1,7 +1,7 @@
 import Foundation
 
 /// Выбор языка интерфейса в настройках.
-enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
+nonisolated enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
     case automatic
     case russian
     case english

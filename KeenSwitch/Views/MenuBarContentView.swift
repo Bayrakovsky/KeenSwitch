@@ -20,7 +20,7 @@ struct MenuBarContentView: View {
             Divider()
             footer
         }
-        .frame(width: 340)
+        .frame(width: 380)
         .task {
             await viewModel.refreshIfNeeded()
         }
@@ -202,7 +202,14 @@ struct MenuBarContentView: View {
         .buttonStyle(.plain)
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .background(isActive ? Color.accentColor.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+        .background {
+            let fill = isActive ? Color.accentColor.opacity(0.12) : Color.clear
+            if #available(macOS 26, *) {
+                ConcentricRectangle(corners: .concentric(minimum: .fixed(8))).fill(fill)
+            } else {
+                RoundedRectangle(cornerRadius: 8).fill(fill)
+            }
+        }
         .disabled(viewModel.selectedDeviceMAC == nil || viewModel.isBusy)
         .accessibilityLabel(policy.localizedDisplayTitle)
         .accessibilityHint(isActive ? L10n.tr("Active Policy Hint") : "")
@@ -227,9 +234,16 @@ struct MenuBarContentView: View {
 
             Button(L10n.tr("Settings")) {
                 dismiss()
-                NSApp.activate(ignoringOtherApps: true)
+                NSApp.activate()
                 openSettings()
             }
+
+            // Основной путь выхода: меню приложения существует только в .regular,
+            // а этот popup доступен всегда — включая тихий старт в .accessory.
+            Button(L10n.tr("Quit")) {
+                AppTermination.quit()
+            }
+            .help(L10n.tr("Quit KeenSwitch"))
         }
         .padding(12)
     }

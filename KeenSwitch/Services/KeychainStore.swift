@@ -5,7 +5,7 @@ import Security
 //
 // Хранение пароля роутера в связке ключей macOS (Generic Password).
 
-enum KeychainStore {
+nonisolated enum KeychainStore {
     private static let service = "com.bayrakovskiy.KeenSwitch.router"
     /// Аккаунт Keychain для хранения GitHub Token. Использовался когда репозиторий
     /// был приватным; сейчас не задействован. Константа оставлена для ссылок из
@@ -132,10 +132,10 @@ enum KeychainStore {
     }
 }
 
-enum KeychainError: LocalizedError {
+nonisolated enum KeychainError: LocalizedError {
     case operationFailed(OSStatus)
 
-    nonisolated var errorDescription: String? {
+    var errorDescription: String? {
         switch self {
         case .operationFailed(let status):
             return String(format: L10n.tr("Keychain Error"), Int(status))

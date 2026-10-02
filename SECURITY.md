@@ -84,19 +84,39 @@ A few things every contributor and reporter should know up front:
   `/Applications`, which requires entitlements no sandboxed app gets. This is a
   deliberate trade-off documented in CONTRIBUTING.md.
 - **Releases are signed ad-hoc, not with a Developer ID** and not notarized.
-  Gatekeeper warns on first launch; users either right-click → Open or run
-  `xattr -cr`. This means a compromised GitHub release token = arbitrary code
-  delivered to every user. The auto-update flow does a `codesign --verify
-  --deep --strict` check before swapping the bundle, but that only catches
-  bit-rot, not a maliciously-signed bundle.
-- **GitHub API token (if set) is stored in the macOS Keychain** under a
-  separate account (`github-token`), with `kSecAttrAccessibleAfterFirstUnlock`.
-- **Router password is stored in the macOS Keychain** under account
-  `router-password`, same accessibility.
+  Gatekeeper blocks the first launch; users approve the app once via
+  System Settings → Privacy & Security → **Open Anyway**, or clear the quarantine
+  flag with `xattr -dr com.apple.quarantine`. (Control-click → Open no longer
+  bypasses Gatekeeper — Apple removed that in macOS 15 Sequoia.)
+  This means a compromised GitHub release token = arbitrary code
+  delivered to every user. The auto-update flow does run `codesign --verify
+  --deep --strict` on the downloaded bundle before swapping it in, but with
+  ad-hoc signatures there is no identity to pin to: that check only proves the
+  bundle is internally consistent, so it catches a truncated or tampered
+  download, not a bundle an attacker signed ad-hoc themselves.
+- **No GitHub token is used.** The updater reads the public Releases API
+  anonymously. Every token path — the `Authorization` header in
+  `Services/UpdateChecker.swift` and the field in the Settings UI — is commented
+  out, and `KeychainStore.githubTokenAccount` (`github-token`) is an unused
+  constant kept in case the repository goes private again. A build that sends an
+  `Authorization` header to `api.github.com` would itself be a finding.
+- **Router password is stored in the macOS Keychain** under service
+  `com.bayrakovskiy.KeenSwitch.router`, account `router-password`, with
+  `kSecAttrAccessibleAfterFirstUnlock` — so a quiet launch at login can read it
+  before the user unlocks the Keychain interactively. It is never written to
+  `UserDefaults`.
 - **The auto-update installer is a shell script** generated at runtime and
-  executed by `/bin/bash`. Paths in it are interpolated as Swift strings — if
-  you find a way to influence those paths via user input or network response,
-  that's a finding.
+  executed by `/bin/bash` with the user's privileges. Paths are **not**
+  interpolated into the script text: they are passed as positional arguments
+  (`$1`…`$6`) and quoted at every use, so a path containing quotes, spaces or
+  apostrophes cannot break out of its argument. (This was not always true — paths
+  were interpolated before 1.0.1.)
+
+  Still worth probing: the `.app` bundle the script installs is whichever
+  directory ending in `.app` is found inside the downloaded ZIP, and the staged
+  and backup paths are derived from the running bundle's own path. A way to make
+  the script act on a path outside the current bundle's directory, or to get a
+  bundle other than the intended one picked out of the archive, is a finding.
 
 ## Thanks
 

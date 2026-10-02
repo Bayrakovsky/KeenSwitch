@@ -10,17 +10,24 @@ permissions:
 
 jobs:
   build-release:
-    runs-on: macos-26
+    # Релиз собираем SDK 27: от линкованного SDK зависят второгодние правки Liquid Glass
+    # (кромка scroll edge, сайдбары до края окна, semibold-выделение, bounce стекла).
+    runs-on: xcode-27
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode 26
+      - name: Verify toolchain
         run: |
-          sudo xcode-select -s "/Applications/Xcode_26.3.app/Contents/Developer"
+          set -euo pipefail
           xcodebuild -version
           sw_vers
-          xcodebuild -showsdks | grep macosx
+          xcrun --sdk macosx --show-sdk-version
+          MAJOR="$(xcodebuild -version | head -1 | sed -E 's/^Xcode ([0-9]+).*/\1/')"
+          if [[ "$MAJOR" != "27" ]]; then
+            echo "::error::Expected Xcode 27, got $(xcodebuild -version | head -1)"
+            exit 1
+          fi
 
       - name: Version from tag
         id: version
@@ -55,10 +62,29 @@ jobs:
             CODE_SIGNING_ALLOWED=YES \
             build
 
-      - name: Verify signature
+      - name: Verify bundle
         run: |
+          set -euo pipefail
           APP="DerivedData/Build/Products/Release/KeenSwitch.app"
           codesign --verify --deep --strict --verbose "$APP"
+
+          # Раннер arm64-only, но при MACOSX_DEPLOYMENT_TARGET=14.0 ARCHS_STANDARD всё ещё
+          # даёт arm64 + x86_64 (x86_64 отпадает только с цели 27.0) — проверяем, что срез на месте.
+          ARCHS="$(lipo -archs "$APP/Contents/MacOS/KeenSwitch")"
+          echo "archs: $ARCHS"
+          for want in arm64 x86_64; do
+            case " $ARCHS " in
+              *" $want "*) ;;
+              *) echo "::error::Missing $want slice (got: $ARCHS)"; exit 1 ;;
+            esac
+          done
+
+          SDK="$(/usr/libexec/PlistBuddy -c 'Print :DTSDKName' "$APP/Contents/Info.plist")"
+          echo "linked SDK: $SDK"
+          case "$SDK" in
+            macosx27*) ;;
+            *) echo "::error::Expected a macosx27 SDK, got $SDK"; exit 1 ;;
+          esac
 
       - name: Package ZIP
         run: |
@@ -80,10 +106,19 @@ jobs:
           body: |
             ## Installation
 
-            1. Download **KeenSwitch-…-macOS.zip** and unzip.
+            1. Download **KeenSwitch-…-macOS.zip** and unzip it.
             2. Drag **KeenSwitch.app** to your **Applications** folder.
-            3. On first launch macOS may block the app — right-click → **Open** → **Open**,
-               or clear the quarantine flag: `xattr -cr /Applications/KeenSwitch.app`
+            3. Double-click it. macOS will refuse to open it — click **Done**.
+            4. Open **System Settings → Privacy & Security**, scroll to **Security**, and click
+               **Open Anyway** next to the KeenSwitch message, then confirm with **Open**.
+               You only need to do this once.
+
+            Prefer the terminal? `xattr -dr com.apple.quarantine /Applications/KeenSwitch.app`
+
+            > Control-clicking the app and choosing **Open** no longer bypasses Gatekeeper —
+            > Apple removed that shortcut in macOS 15 Sequoia. Use System Settings instead.
 
             ---
-            _Built with ad-hoc code signing. Gatekeeper will prompt on first launch — this is expected._
+            _Built with ad-hoc code signing and not notarized, because the project has no paid
+            Apple Developer ID. Gatekeeper therefore blocks the first launch — this is expected.
+            Verify the download against `checksums.txt` if you want to be sure of what you ran._

@@ -95,6 +95,18 @@ private struct DeviceRow: View {
     let onTogglePin: () -> Void
     let onSelectPolicy: (AccessPolicy) -> Void
 
+    /// Имя активной политики для Picker. Пустая строка — активной нет, тогда ни один
+    /// тег не совпадёт и меню покажется без галочки.
+    private var selectedPolicyName: Binding<String> {
+        Binding(
+            get: { activePolicy?.name ?? "" },
+            set: { name in
+                guard let policy = policies.first(where: { $0.name == name }) else { return }
+                onSelectPolicy(policy)
+            }
+        )
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             DeviceIconView(isOnline: device.isOnline)
@@ -154,18 +166,21 @@ private struct DeviceRow: View {
                 .accessibilityLabel(isPinned ? L10n.tr("Unpin") : L10n.tr("Pin"))
 
                 Menu {
-                    ForEach(policies) { policy in
-                        Button {
-                            onSelectPolicy(policy)
-                        } label: {
-                            if activePolicy?.name == policy.name {
-                                Label(policy.localizedDisplayTitle, systemImage: "checkmark")
-                            } else {
-                                Text(policy.localizedDisplayTitle)
-                            }
+                    // Picker, а не ForEach(Button) с Label(_, systemImage: "checkmark"):
+                    // на macOS 27 иконка из Label в пункте меню перестала рисоваться,
+                    // и активная политика ничем не отличалась от остальных. Раньше это
+                    // работало — видно на docs/screen-main.png, снятом на macOS 26.
+                    // Inline-Picker не зависит от отрисовки иконки: он выставляет пункту
+                    // NSMenuItem.state, то есть галочку в штатной колонке состояния,
+                    // плюс даёт навигацию с клавиатуры и «выбрано» для VoiceOver.
+                    Picker(L10n.tr("Select Policy"), selection: selectedPolicyName) {
+                        ForEach(policies) { policy in
+                            Text(policy.localizedDisplayTitle)
+                                .tag(policy.name)
                         }
-                        .accessibilityLabel(policy.localizedDisplayTitle)
                     }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
